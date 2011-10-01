@@ -5,7 +5,7 @@ first, make some links in the externals directory :
 cd externals
 ln -s mongodb-src-r2.0.0 mongodb
 
-If you prefer to use your system's libraries, you should modify the ncs.pro
+If you prefer to use your system's libraries, you should modify the ncw.pro
 
 
 second, make the mongodb client :
@@ -18,5 +18,14 @@ make
 
 
 USE
+ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --zeromq-ip=127.0.0.1 --zeromq-port=5560 --worker-type=load
+
+zeromq-port depend of the worker type :
+load =>    5560
+cpu =>     5561
+network => 5562
+memory =>  5563
+uptime =>  5564
+process => 5565
 
 contact : fredix at nodecast dot net
