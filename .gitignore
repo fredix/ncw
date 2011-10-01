@@ -1,0 +1,4 @@
+ncs
+*.o
+moc*
+core*
