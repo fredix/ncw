@@ -29,7 +29,7 @@ LIBS += ./externals/mongodb/libmongoclient.a \
     -lQxtCore \
     -lzmq
 #INCLUDEPATH += /usr/local/include
-INCLUDEPATH += ./externals/mongodb/
+INCLUDEPATH += ./externals/
 HEADERS += main.h \
     stats_cpu.h \
     stats_process.h \

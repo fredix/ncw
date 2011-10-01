@@ -28,7 +28,7 @@
 #include <QDebug>
 #include <QVariant>
 #include "mongodb/client/gridfs.h"
-#include "mongodb//bson/bson.h"
+#include "mongodb/bson/bson.h"
 #include "mongodb/client/dbclient.h"
 
 using namespace mongo;

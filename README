@@ -1,0 +1,22 @@
+ncw is the nodecast worker
+
+INSTALL
+first, make some links in the externals directory :
+cd externals
+ln -s mongodb-src-r2.0.0 mongodb
+
+If you prefer to use your system's libraries, you should modify the ncs.pro
+
+
+second, make the mongodb client :
+cd externals/mongodb
+scons mongoclient
+
+last, make the nodecast worker :
+qmake
+make
+
+
+USE
+
+contact : fredix at nodecast dot net

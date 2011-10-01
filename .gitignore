@@ -1,4 +1,6 @@
-ncs
+Makefile
+ncw.pro.user
+ncw
 *.o
 moc*
 core*
