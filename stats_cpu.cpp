@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@ Stats_cpu::~Stats_cpu()
 
 
 
-void Stats_cpu::s_job_receive(std::string data) {
+void Stats_cpu::s_job_receive(bson::bo payload) {
 
 
     bo bo_cpu_statistics;
@@ -44,31 +44,12 @@ void Stats_cpu::s_job_receive(std::string data) {
     qDebug() << "Stats_cpu::s_job_receive";
     std::cout << "RECEIVE MESSAGE" << std::endl;
 
-    QString l_data = QString::fromStdString(data);
 
 
-    //Deserializing
-    QByteArray al = QByteArray::fromBase64(l_data.toAscii());
-
-    Hash r_hash;
-
-    QDataStream in(&al,QIODevice::ReadOnly);   // read the data serialized from the file
-    in >> r_hash;
-
-    qDebug() << "r_hash value: " << r_hash["xml"].toHash()["cpu_user"].toString();
-
-
-
-
-    try {
-        bo msg = mongo::fromjson(r_hash["bo"].toString().toStdString());
-
-
-
-    be created_at = msg.getField("created_at");
+    be created_at = payload["headers"]["created_at"];
     cout << created_at.jsonString(TenGen) << endl;
 
-    be uuid = msg.getField("uuid");
+    be uuid = payload["headers"]["uuid"];
 
 
     bo host = nosql_.Find("hosts", uuid.wrap());
@@ -92,17 +73,17 @@ void Stats_cpu::s_job_receive(std::string data) {
 
     bob_cpu_statistics << mongo::GENOID;
     bob_cpu_statistics << "host_id" << host_id;
-    bob_cpu_statistics.append(msg.getField("created_at"));
-    bob_cpu_statistics << "user" << r_hash["xml"].toHash()["user"].toDouble()
-                       << "sys" << r_hash["xml"].toHash()["sys"].toDouble()
-                       << "nice" << r_hash["xml"].toHash()["nice"].toDouble()
-                       << "idle" << r_hash["xml"].toHash()["idle"].toDouble()
-                       << "wait" << r_hash["xml"].toHash()["wait"].toDouble()
-                       << "irq" << r_hash["xml"].toHash()["irq"].toDouble()
-                       << "soft_irq" << r_hash["xml"].toHash()["soft_irq"].toDouble()
-                       << "stolen" << r_hash["xml"].toHash()["stolen"].toDouble()
-                       << "combined" << r_hash["xml"].toHash()["combined"].toDouble()
-                       << "total" << r_hash["xml"].toHash()["total"].toDouble();
+    bob_cpu_statistics.append(created_at);
+    bob_cpu_statistics << "user" << payload["cpu_usage"]["user"]
+                       << "sys" << payload["cpu_usage"]["sys"]
+                       << "nice" << payload["cpu_usage"]["nice"]
+                       << "idle" << payload["cpu_usage"]["idle"]
+                       << "wait" << payload["cpu_usage"]["wait"]
+                       << "irq" << payload["cpu_usage"]["irq"]
+                       << "soft_irq" << payload["cpu_usage"]["soft_irq"]
+                       << "stolen" << payload["cpu_usage"]["stolen"]
+                       << "combined" << payload["cpu_usage"]["combined"]
+                       << "total" << payload["cpu_usage"]["total"];
     bo_cpu_statistics = bob_cpu_statistics.obj();
 
     nosql_.Insert("cpu_statistics", bo_cpu_statistics);
@@ -117,15 +98,15 @@ void Stats_cpu::s_job_receive(std::string data) {
 
 
     long long counter = host.hasField("stats_cpu") ? host.getFieldDotted("stats_cpu.counter").numberLong() + 1 : 1;
-    double combined = r_hash["xml"].toHash()["combined"].toDouble();
+    double combined = payload["cpu_usage"]["combined"].Double();
 
     double max_combined = (host.hasField("stats_cpu") && combined < host.getFieldDotted("stats_cpu.max_combined").Double()) ? host.getFieldDotted("stats_cpu.max_combined").Double() : combined;
     double all_combined = (host.hasField("stats_cpu")) ? host.getFieldDotted("stats_cpu.all_combined").Double() + combined : combined;
 
     // if (!host.hasField("stats_cpu")) bob_stats_cpu.append(msg.getField("created_at"));
 
-    if (!host.hasField("stats_cpu")) bob_stats_cpu << "stats_cpu.created_at" << msg.getField("created_at");
-    bob_stats_cpu << "stats_cpu.updated_at" << msg.getField("created_at");
+    if (!host.hasField("stats_cpu")) bob_stats_cpu << "stats_cpu.created_at" << created_at;
+    bob_stats_cpu << "stats_cpu.updated_at" << created_at;
     bob_stats_cpu << "stats_cpu.counter" << counter;
     bob_stats_cpu << "stats_cpu.combined" << combined;
     bob_stats_cpu << "stats_cpu.all_combined" << all_combined;
@@ -165,12 +146,6 @@ void Stats_cpu::s_job_receive(std::string data) {
        subscriptions.cancel(message.getDestination());
     }*/
 
-
-    }
-    catch(mongo::DBException &e) {
-        std::cout << "Stats_cpu::s_job_receive, ERROR on serializing data : " << data << " , error : " << e.what() << std::endl;
-        return;
-    }
 
 
 }

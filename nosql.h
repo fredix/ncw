@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -47,11 +47,10 @@ public:
     bo Find(QString a_document, const bo &datas);
     QBool Insert(QString a_document, bo a_datas);
     QBool Update(QString a_document, const bo &element_id, const bo &a_datas);
-    QDomDocument ExtractXML(bo &a_datas);
-
+    bo ExtractJSON(const be &gfs_id);
 
 protected:
-    QBool ReadFile(be &gfs_id);
+    QBool ReadFile(const be &gfs_id);
 
 private:
     QString m_server;

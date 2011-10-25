@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@ Stats_network::~Stats_network()
 
 
 
-void Stats_network::s_job_receive(std::string data) {
+void Stats_network::s_job_receive(bson::bo payload) {
 
 
     bo bo_network_statistics;
@@ -45,32 +45,11 @@ void Stats_network::s_job_receive(std::string data) {
     qDebug() << "Stats_network::s_job_receive";
     std::cout << "RECEIVE MESSAGE" << std::endl;
 
-    QString l_data = QString::fromStdString(data);
 
-
-    //Deserializing
-    QByteArray al = QByteArray::fromBase64(l_data.toAscii());
-
-
-    Hash r_hash;
-
-
-
-    QDataStream in(&al,QIODevice::ReadOnly);   // read the data serialized from the file
-    in >> r_hash;
-
-    qDebug() << "r_hash value: " << r_hash["xml"].toHash()["default_gateway"].toString();
-
-
-
-
-
-    bo msg = mongo::fromjson(r_hash["bo"].toString().toStdString());
-
-    be created_at = msg.getField("created_at");
+    be created_at = payload["headers"]["created_at"];
     cout << created_at.jsonString(TenGen) << endl;
 
-    be uuid = msg.getField("uuid");
+    be uuid = payload["headers"]["uuid"];
 
 
 
@@ -95,9 +74,9 @@ void Stats_network::s_job_receive(std::string data) {
 
     bob_network_statistics << mongo::GENOID;
     bob_network_statistics << "host_id" << host_id;
-    bob_network_statistics.append(msg.getField("created_at"));
-    bob_network_statistics << "rx_rate" << r_hash["xml"].toHash()["rx_rate"].toDouble()
-                           << "tx_rate" << r_hash["xml"].toHash()["tx_rate"].toDouble();
+    bob_network_statistics.append(created_at);
+    bob_network_statistics << "rx_rate" << payload["network"]["rx_rate"].Double()
+                           << "tx_rate" << payload["network"]["tx_rate"].Double();
 
     bo_network_statistics = bob_network_statistics.obj();
 
@@ -115,8 +94,8 @@ void Stats_network::s_job_receive(std::string data) {
 
 
     long long counter = host.hasField("stats_network") ? host.getFieldDotted("stats_network.counter").numberLong() + 1 : 1;
-    double rx_rate = r_hash["xml"].toHash()["rx_rate"].toDouble();
-    double tx_rate = r_hash["xml"].toHash()["tx_rate"].toDouble();
+    double rx_rate = payload["network"]["rx_rate"].Double();
+    double tx_rate = payload["network"]["tx_rate"].Double();
 
     double max_rx = (host.hasField("stats_network") && rx_rate < host.getFieldDotted("stats_network.max_rx").Double()) ? host.getFieldDotted("stats_network.max_rx").Double() : rx_rate;
     double all_rx = (host.hasField("stats_network")) ? host.getFieldDotted("stats_network.all_rx").Double() + rx_rate : rx_rate;
@@ -126,8 +105,8 @@ void Stats_network::s_job_receive(std::string data) {
 
 
     //if (!host.hasField("stats_network")) bob_stats_network.append(msg.getField("created_at"));
-    if (!host.hasField("stats_network")) bob_stats_network << "stats_network.created_at" << msg.getField("created_at");
-    bob_stats_network << "stats_network.updated_at" << msg.getField("created_at");
+    if (!host.hasField("stats_network")) bob_stats_network << "stats_network.created_at" << created_at;
+    bob_stats_network << "stats_network.updated_at" << created_at;
     bob_stats_network << "stats_network.counter" << counter;
     bob_stats_network << "stats_network.rx_rate" << rx_rate;
     bob_stats_network << "stats_network.all_rx" << all_rx;

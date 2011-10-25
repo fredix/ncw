@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -87,9 +87,9 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
         exit(1);
     }
 
-    qRegisterMetaType<std::string>("std::string");
+    qRegisterMetaType<bson::bo>("bson::bo");
 
-    this->connect(zeromq->dispatch, SIGNAL(payload(std::string)), stats_worker, SLOT(s_job_receive(std::string)));
+    this->connect(zeromq->dispatch, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)));
     this->connect(stats_worker, SIGNAL(delete_cache(QString)), this, SLOT(s_delete_cache(QString)));
 }
 

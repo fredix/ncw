@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@ Stats_load::~Stats_load()
 
 
 
-void Stats_load::s_job_receive(std::string data) {
+void Stats_load::s_job_receive(bson::bo payload) {
 
     bo bo_load_statistics;
     bob bob_load_statistics;
@@ -43,29 +43,11 @@ void Stats_load::s_job_receive(std::string data) {
     qDebug() << "Stats_load::s_job_receive";
     std::cout << "RECEIVE MESSAGE" << std::endl;
 
-    QString l_data = QString::fromStdString(data);
 
-
-    //Deserializing
-    QByteArray al = QByteArray::fromBase64(l_data.toAscii());
-
-
-    Hash r_hash;
-
-
-
-    QDataStream in(&al,QIODevice::ReadOnly);   // read the data serialized from the file
-    in >> r_hash;
-
-    qDebug() << "r_hash value: " << r_hash["xml"].toHash()["loadavg0"].toString();
-
-
-    bo msg = mongo::fromjson(r_hash["bo"].toString().toStdString());
-
-    be created_at = msg.getField("created_at");
+    be created_at = payload["headers"]["created_at"];
     cout << created_at.jsonString(TenGen) << endl;
 
-    be uuid = msg.getField("uuid");
+    be uuid = payload["headers"]["uuid"];
 
 
 
@@ -94,15 +76,15 @@ void Stats_load::s_job_receive(std::string data) {
     qint64 loadavg2 = r_hash["xml"].toHash()["loadavg2"].toFloat() * 100.00 + 0.5;
     */
 
-    double loadavg0 = r_hash["xml"].toHash()["loadavg0"].toDouble();
-    double loadavg1 = r_hash["xml"].toHash()["loadavg1"].toDouble();
-    double loadavg2 = r_hash["xml"].toHash()["loadavg2"].toDouble();
+    double loadavg0 = payload["load"]["loadavg0"].Double();
+    double loadavg1 = payload["load"]["loadavg1"].Double();
+    double loadavg2 = payload["load"]["loadavg2"].Double();
 
 
 
     bob_load_statistics << mongo::GENOID;
     bob_load_statistics << "host_id" << host_id;
-    bob_load_statistics.append(msg.getField("created_at"));
+    bob_load_statistics.append(created_at);
     bob_load_statistics << "loadavg0" << loadavg0 << "loadavg1" << loadavg1 << "loadavg2" << loadavg2;
     bo_load_statistics = bob_load_statistics.obj();
 
@@ -128,8 +110,8 @@ void Stats_load::s_job_receive(std::string data) {
     double all_loadavg2 = (host.hasField("stats_load")) ? host.getFieldDotted("stats_load.all_loadavg2").Double() + loadavg2 : loadavg2;
 
     //if (!host.hasField("stats_load")) bob_stats_load.append(msg.getField("created_at"));
-    if (!host.hasField("stats_load")) bob_stats_load << "stats_load.created_at" << msg.getField("created_at");
-    bob_stats_load << "stats_load.updated_at" << msg.getField("created_at");
+    if (!host.hasField("stats_load")) bob_stats_load << "stats_load.created_at" << created_at;
+    bob_stats_load << "stats_load.updated_at" << created_at;
     bob_stats_load << "stats_load.counter" << counter;
     bob_stats_load << "stats_load.loadavg0" << loadavg0;
     bob_stats_load << "stats_load.loadavg1" << loadavg1;

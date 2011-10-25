@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -103,7 +103,6 @@ bo Nosql::Find(QString a_document, const bo &datas)
 
 /*
  *
- ExtractXML parse the deserialized job from Qpid server.
  Struct of the job from the Ruby code :
   job = {
     :email => @current_user.email,
@@ -113,52 +112,60 @@ bo Nosql::Find(QString a_document, const bo &datas)
   }
  *
  */
-QDomDocument Nosql::ExtractXML(bo &a_datas)
+bo Nosql::ExtractJSON(const be &gfs_id)
 {
-    qDebug() << "Nosql::ExtractXML";
-    //m_datas = a_datas;
-    be gfs_id = a_datas.getField("_id");
-    //be uuid = a_datas.getField("uuid");
-    QDomDocument m_xml_datas;
-
+    qDebug() << "Nosql::ExtractJSON";
+    bo m_bo_json;
     QString l_files;
     l_files.append(this->m_database).append(".").append("fs.files");
     QString l_chunks;
     l_chunks.append(this->m_database).append(".").append("fs.chunks");
 
 
-
-    std::cout << "gfs_id : " << gfs_id.jsonString(TenGen) << std::endl;
+    cout << "gfs_id : " << gfs_id.jsonString(TenGen) << endl;
 
     //Query req = Query("{" + uuid.jsonString(TenGen) + "}");
-
 
     if (ReadFile(gfs_id))
     {
         if (!this->m_gf->exists()) {
             std::cout << "file not found" << std::endl;
-         }
+        }
         else {
             std::cout << "Find file !" << std::endl;
 
-            QFile xml_tmp("/tmp/worker_nodecast_tmp.xml");
+            QFile json_tmp("/tmp/ncw.json");
 
-            m_gf->write(xml_tmp.fileName().toStdString().c_str());
+            m_gf->write(json_tmp.fileName().toStdString().c_str());
 
-            if( !m_xml_datas.setContent(&xml_tmp, false))
+            json_tmp.open(QIODevice::ReadOnly);
+
+            QString json = QString::fromUtf8(json_tmp.readAll());
+
+            //std::cout << "json : " << json.toStdString() << std::endl;
+
+            try {
+                m_bo_json = mongo::fromjson(json.toStdString());
+            }
+            catch(mongo::DBException &e ) {
+                std::cout << "caught on parsing json file : " << e.what() << std::endl;
+                qDebug() << "Nosql::ExtractJSON ERROR ON GRIDFS";
+            }
+
+            //std::cout << "m_bo_json : " << m_bo_json << std::endl;
+
+            if (m_bo_json.nFields() == 0)
             {
-                std::cout << "can not create XML" << std::endl;
-                exit(1);
+                std::cout << "can not read JSON file" << std::endl;
             }
             else
             {
-                std::cout << "XML created !" << std::endl;
+                std::cout << "JSON created !" << std::endl;
             }
 
-            xml_tmp.close();
+            json_tmp.close();
         }
     }
-
 
     std::cout << "before remove GridFS file" << std::endl;
     std::cout << "GridFS filename : " << this->m_gf->getFilename() << std::endl;
@@ -182,11 +189,10 @@ QDomDocument Nosql::ExtractXML(bo &a_datas)
     std::cout << "GridFS file exist after : " << this->m_gf->exists() << std::endl;
 
     delete(this->m_gf);
-    return m_xml_datas;
+    return m_bo_json;
 }
 
-
-QBool Nosql::ReadFile(be &gfs_id)
+QBool Nosql::ReadFile(const be &gfs_id)
 {
     std::cout << "Nosql::ReadFile : " << gfs_id << std::endl;
     try {

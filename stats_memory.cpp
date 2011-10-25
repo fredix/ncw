@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -32,7 +32,7 @@ Stats_memory::~Stats_memory()
 
 
 
-void Stats_memory::s_job_receive(std::string data) {
+void Stats_memory::s_job_receive(bson::bo payload) {
 
 
     bo bo_memory_statistics;
@@ -44,33 +44,11 @@ void Stats_memory::s_job_receive(std::string data) {
     qDebug() << "Stats_memory::s_job_receive";
     std::cout << "RECEIVE MESSAGE" << std::endl;
 
-    QString l_data = QString::fromStdString(data);
 
-
-    //Deserializing
-    QByteArray al = QByteArray::fromBase64(l_data.toAscii());
-
-
-    Hash r_hash;
-
-
-
-    QDataStream in(&al,QIODevice::ReadOnly);   // read the data serialized from the file
-    in >> r_hash;
-
-    qDebug() << "r_hash value: " << r_hash["xml"].toHash()["mem_used"].toString();
-
-
-
-
-
-    bo msg = mongo::fromjson(r_hash["bo"].toString().toStdString());
-
-    be created_at = msg.getField("created_at");
+    be created_at = payload["headers"]["created_at"];
     std::cout << created_at.jsonString(TenGen) << std::endl;
 
-    be uuid = msg.getField("uuid");
-
+    be uuid = payload["headers"]["uuid"];
 
 
 
@@ -95,18 +73,18 @@ void Stats_memory::s_job_receive(std::string data) {
 
     bob_memory_statistics << mongo::GENOID;
     bob_memory_statistics << "host_id" << host_id;
-    bob_memory_statistics.append(msg.getField("created_at"));
-    bob_memory_statistics << "mem_used" << r_hash["xml"].toHash()["mem_used"].toDouble()
-                       << "mem_free" << r_hash["xml"].toHash()["mem_free"].toDouble()
-                       << "mem_actual_free" << r_hash["xml"].toHash()["mem_actual_free"].toDouble()
-                       << "mem_actual_used" << r_hash["xml"].toHash()["mem_actual_used"].toDouble()
-                       << "mem_actual_free_percent" << r_hash["xml"].toHash()["mem_actual_free_percent"].toDouble()
-                       << "mem_actual_used_percent" << r_hash["xml"].toHash()["mem_actual_used_percent"].toDouble()
-                       << "swap_total" << r_hash["xml"].toHash()["swap_total"].toDouble()
-                       << "swap_used" << r_hash["xml"].toHash()["swap_used"].toDouble()
-                       << "swap_free" << r_hash["xml"].toHash()["swap_free"].toDouble()
-                       << "swap_page_in" << r_hash["xml"].toHash()["swap_page_in"].toDouble()
-                       << "swap_page_out" << r_hash["xml"].toHash()["swap_page_out"].toDouble();
+    bob_memory_statistics.append(created_at);
+    bob_memory_statistics << "mem_used" << payload["memory"]["mem_used"].Double()
+                       << "mem_free" << payload["memory"]["mem_free"].Double()
+                       << "mem_actual_free" << payload["memory"]["mem_actual_free"].Double()
+                       << "mem_actual_used" << payload["memory"]["mem_actual_used"].Double()
+                       << "mem_actual_free_percent" << payload["memory"]["mem_actual_free_percent"].Double()
+                       << "mem_actual_used_percent" << payload["memory"]["mem_actual_used_percent"].Double()
+                       << "swap_total" << payload["memory"]["swap_total"].Double()
+                       << "swap_used" << payload["memory"]["swap_used"].Double()
+                       << "swap_free" << payload["memory"]["swap_free"].Double()
+                       << "swap_page_in" << payload["memory"]["swap_page_in"].Double()
+                       << "swap_page_out" << payload["memory"]["swap_page_out"].Double();
     bo_memory_statistics = bob_memory_statistics.obj();
 
     nosql_.Insert("memory_statistics", bo_memory_statistics);
@@ -124,20 +102,20 @@ void Stats_memory::s_job_receive(std::string data) {
 
 
     long long counter = host.hasField("stats_memory") ? host.getFieldDotted("stats_memory.counter").numberLong() + 1 : 1;
-    double mem_used = r_hash["xml"].toHash()["mem_used"].toDouble();
+    double mem_used = payload["memory"]["mem_used"].Double();
 
     double max_mem_used = (host.hasField("stats_memory") && mem_used < host.getFieldDotted("stats_memory.max_mem_used").Double()) ? host.getFieldDotted("stats_memory.max_mem_used").Double() : mem_used;
     double all_mem_used = (host.hasField("stats_memory")) ? host.getFieldDotted("stats_memory.all_mem_used").Double() + mem_used : mem_used;
 
     //if (!host.hasField("stats_memory")) bob_stats_memory.append(msg.getField("created_at"));
-    if (!host.hasField("stats_memory")) bob_stats_memory << "stats_memory.created_at" << msg.getField("created_at");
-    bob_stats_memory << "stats_memory.updated_at" << msg.getField("created_at");
+    if (!host.hasField("stats_memory")) bob_stats_memory << "stats_memory.created_at" << created_at;
+    bob_stats_memory << "stats_memory.updated_at" << created_at;
     bob_stats_memory << "stats_memory.counter" << counter;
     bob_stats_memory << "stats_memory.mem_used" << mem_used;
     bob_stats_memory << "stats_memory.all_mem_used" << all_mem_used;
     bob_stats_memory << "stats_memory.average_mem_used" << all_mem_used / counter;
     bob_stats_memory << "stats_memory.max_mem_used" << max_mem_used;
-    bob_stats_memory << "stats_memory.swap_total" << r_hash["xml"].toHash()["swap_total"].toDouble();
+    bob_stats_memory << "stats_memory.swap_total" << payload["memory"]["swap_total"].Double();
 
     //bo_stats_memory = BSONObjBuilder().append("stats_memory", bob_stats_memory.obj()).obj();
     bo_stats_memory = bob_stats_memory.obj();

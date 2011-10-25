@@ -1,8 +1,8 @@
 /****************************************************************************
-**   nodecast-worker is a bot worker, part of the backend of nodecast.net
+**   ncw is the nodecast worker, client of the nodecast server
 **   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
 **
-**   http://gitorious.org/nodecast/nodecast-worker
+**   https://github.com/nodecast/ncw
 **
 **   This program is free software: you can redistribute it and/or modify
 **   it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@ Stats_uptime::~Stats_uptime()
 
 
 
-void Stats_uptime::s_job_receive(std::string data) {
+void Stats_uptime::s_job_receive(bson::bo payload) {
 
     bo bo_uptime_statistics;
     bob bob_uptime_statistics;
@@ -43,29 +43,11 @@ void Stats_uptime::s_job_receive(std::string data) {
     qDebug() << "Stats_uptime::s_job_receive";
     std::cout << "RECEIVE MESSAGE" << std::endl;
 
-    QString l_data = QString::fromStdString(data);
 
-
-    //Deserializing
-    QByteArray al = QByteArray::fromBase64(l_data.toAscii());
-
-
-    Hash r_hash;
-
-
-
-    QDataStream in(&al,QIODevice::ReadOnly);   // read the data serialized from the file
-    in >> r_hash;
-
-    qDebug() << "r_hash value: " << r_hash["xml"].toHash()["loadavg0"].toString();
-
-
-    bo msg = mongo::fromjson(r_hash["bo"].toString().toStdString());
-
-    be created_at = msg.getField("created_at");
+    be created_at = payload["headers"]["created_at"];
     cout << created_at.jsonString(TenGen) << endl;
 
-    be uuid = msg.getField("uuid");
+    be uuid = payload["headers"]["uuid"];
 
 
 
@@ -91,9 +73,9 @@ void Stats_uptime::s_job_receive(std::string data) {
 
     bob_uptime_statistics << mongo::GENOID;
     bob_uptime_statistics << "host_id" << host_id;
-    bob_uptime_statistics.append(msg.getField("created_at"));
-    bob_uptime_statistics << "time" << r_hash["xml"].toHash()["time"].toDouble()
-                          << "days" << r_hash["xml"].toHash()["days"].toString().toStdString();
+    bob_uptime_statistics.append(created_at);
+    bob_uptime_statistics << "time" << payload["uptime"]["time"].Double()
+                          << "days" << payload["uptime"]["days"];
     bo_uptime_statistics = bob_uptime_statistics.obj();
 
     nosql_.Insert("uptime_statistics", bo_uptime_statistics);
@@ -109,18 +91,18 @@ void Stats_uptime::s_job_receive(std::string data) {
 
 
     long long counter = host.hasField("stats_uptime") ? host.getFieldDotted("stats_uptime.counter").numberLong() + 1 : 1;
-    double l_time = r_hash["xml"].toHash()["time"].toDouble();
+    double l_time = payload["uptime"]["time"].Double();
 
     double max_time = (host.hasField("stats_uptime") && l_time < host.getFieldDotted("stats_uptime.max_time").Double()) ? host.getFieldDotted("stats_uptime.max_time").Double() : l_time;
     double all_time = (host.hasField("stats_uptime")) ? host.getFieldDotted("stats_uptime.all_time").Double() + l_time : l_time;
 
 
-    if (!host.hasField("stats_uptime")) bob_stats_uptime << "stats_uptime.created_at" << msg.getField("created_at");
-    bob_stats_uptime << "stats_uptime.updated_at" << msg.getField("created_at");
+    if (!host.hasField("stats_uptime")) bob_stats_uptime << "stats_uptime.created_at" << created_at;
+    bob_stats_uptime << "stats_uptime.updated_at" << created_at;
     bob_stats_uptime << "stats_uptime.counter" << counter;
     bob_stats_uptime << "stats_uptime.time" << l_time;
     bob_stats_uptime << "stats_uptime.all_time" << all_time;
-    bob_stats_uptime << "stats_uptime.days" << r_hash["xml"].toHash()["days"].toString().toStdString();
+    bob_stats_uptime << "stats_uptime.days" << payload["uptime"]["days"];
     bob_stats_uptime << "stats_uptime.average" << all_time / counter;
     bob_stats_uptime << "stats_uptime.max_time" << max_time;
 

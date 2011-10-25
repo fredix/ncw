@@ -28,7 +28,7 @@ LIBS += ./externals/mongodb/libmongoclient.a \
     -lmemcached \
     -lQxtCore \
     -lzmq
-#INCLUDEPATH += /usr/local/include
+INCLUDEPATH += /usr/include/qxt/QxtCore
 INCLUDEPATH += ./externals/
 HEADERS += main.h \
     stats_cpu.h \
