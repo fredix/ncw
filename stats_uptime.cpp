@@ -74,8 +74,8 @@ void Stats_uptime::s_job_receive(bson::bo payload) {
     bob_uptime_statistics << mongo::GENOID;
     bob_uptime_statistics << "host_id" << host_id;
     bob_uptime_statistics.append(created_at);
-    bob_uptime_statistics << "time" << payload["uptime"]["time"].Double()
-                          << "days" << payload["uptime"]["days"];
+    bob_uptime_statistics << "time" << QString::fromStdString(payload[payload["uptime"]["time"].valuestr()).toDouble()
+                          << "days" << QString::fromStdString(payload["uptime"]["days"].valuestr()).toDouble();
     bo_uptime_statistics = bob_uptime_statistics.obj();
 
     nosql_.Insert("uptime_statistics", bo_uptime_statistics);
@@ -91,7 +91,7 @@ void Stats_uptime::s_job_receive(bson::bo payload) {
 
 
     long long counter = host.hasField("stats_uptime") ? host.getFieldDotted("stats_uptime.counter").numberLong() + 1 : 1;
-    double l_time = payload["uptime"]["time"].Double();
+    double l_time = QString::fromStdString(payload["uptime"]["time"].valuestr()).toDouble();
 
     double max_time = (host.hasField("stats_uptime") && l_time < host.getFieldDotted("stats_uptime.max_time").Double()) ? host.getFieldDotted("stats_uptime.max_time").Double() : l_time;
     double all_time = (host.hasField("stats_uptime")) ? host.getFieldDotted("stats_uptime.all_time").Double() + l_time : l_time;

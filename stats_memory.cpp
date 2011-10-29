@@ -102,7 +102,7 @@ void Stats_memory::s_job_receive(bson::bo payload) {
 
 
     long long counter = host.hasField("stats_memory") ? host.getFieldDotted("stats_memory.counter").numberLong() + 1 : 1;
-    double mem_used = payload["memory"]["mem_used"].Double();
+    double mem_used = QString::fromStdString(payload["memory"]["mem_used"].valuestr()).toDouble();
 
     double max_mem_used = (host.hasField("stats_memory") && mem_used < host.getFieldDotted("stats_memory.max_mem_used").Double()) ? host.getFieldDotted("stats_memory.max_mem_used").Double() : mem_used;
     double all_mem_used = (host.hasField("stats_memory")) ? host.getFieldDotted("stats_memory.all_mem_used").Double() + mem_used : mem_used;

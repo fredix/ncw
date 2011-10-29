@@ -126,8 +126,6 @@ void Stats_process::s_job_receive(bson::bo payload) {
     nosql_.Update("hosts", host_id.wrap(), bo_stats_process);
 
 
-    std::cout << "bo_stats_process : " << bo_stats_process.toString() << std::endl;
-
 
     qDebug() << cache_path.toStdString().c_str();
 

@@ -57,8 +57,6 @@ void Zdispatch::receive_payload()
 
         bo l_payload = bo((char*)message.data());
 
-        std::cout << "l_payload : " << l_payload << std::endl;
-
         emit payload(l_payload);
     }
 
