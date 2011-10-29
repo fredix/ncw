@@ -89,7 +89,7 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
 
     qRegisterMetaType<bson::bo>("bson::bo");
 
-    this->connect(zeromq->dispatch, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)));
+    this->connect(zeromq->dispatch, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
     this->connect(stats_worker, SIGNAL(delete_cache(QString)), this, SLOT(s_delete_cache(QString)));
 }
 

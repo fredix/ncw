@@ -55,28 +55,11 @@ void Zdispatch::receive_payload()
 
         std::cout << "Received request: [" << (char*) message.data() << "]" << std::endl;
 
-        //QString l_payload = QString::fromAscii((char*)message.data());
         bo l_payload = bo((char*)message.data());
 
         std::cout << "l_payload : " << l_payload << std::endl;
 
-        //std::cout << "BEFORE BO" << std::endl;
-        //bo data = mongo::fromjson((char*)message.data());
-        //std::cout << "AFTER BO" << std::endl;
-        //bo data = bo(payload.toAscii().data());
-        //be uuid = data.getField("_id");
-        //std::cout << "DATAs : " << uuid.toString() << std::endl;
-
-
         emit payload(l_payload);
-
-
-        //  Send results to sink
-        //message.rebuild();
-        //sender.send(message);
-
-        //  Simple progress indicator for the viewer
-        //std::cout << "." << std::flush;
     }
 
 }
