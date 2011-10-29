@@ -115,7 +115,7 @@ void Stats_memory::s_job_receive(bson::bo payload) {
     bob_stats_memory << "stats_memory.all_mem_used" << all_mem_used;
     bob_stats_memory << "stats_memory.average_mem_used" << all_mem_used / counter;
     bob_stats_memory << "stats_memory.max_mem_used" << max_mem_used;
-    bob_stats_memory << "stats_memory.swap_total" << payload["memory"]["swap_total"].Double();
+    bob_stats_memory << "stats_memory.swap_total" << QString::fromStdString(payload["memory"]["swap_total"].valuestr()).toDouble();
 
     //bo_stats_memory = BSONObjBuilder().append("stats_memory", bob_stats_memory.obj()).obj();
     bo_stats_memory = bob_stats_memory.obj();
