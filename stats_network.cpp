@@ -75,8 +75,8 @@ void Stats_network::s_job_receive(bson::bo payload) {
     bob_network_statistics << mongo::GENOID;
     bob_network_statistics << "host_id" << host_id;
     bob_network_statistics.append(created_at);
-    bob_network_statistics << "rx_rate" << payload["network"]["rx_rate"].Double()
-                           << "tx_rate" << payload["network"]["tx_rate"].Double();
+    bob_network_statistics << "rx_rate" << QString::fromStdString(payload["network"]["rx_rate"].valuestr()).toDouble()
+                           << "tx_rate" << QString::fromStdString(payload["network"]["tx_rate"].valuestr()).toDouble();
 
     bo_network_statistics = bob_network_statistics.obj();
 
@@ -94,8 +94,8 @@ void Stats_network::s_job_receive(bson::bo payload) {
 
 
     long long counter = host.hasField("stats_network") ? host.getFieldDotted("stats_network.counter").numberLong() + 1 : 1;
-    double rx_rate = payload["network"]["rx_rate"].Double();
-    double tx_rate = payload["network"]["tx_rate"].Double();
+    double rx_rate = QString::fromStdString(payload["network"]["rx_rate"].valuestr()).toDouble();
+    double tx_rate = QString::fromStdString(payload["network"]["tx_rate"].valuestr()).toDouble();
 
     double max_rx = (host.hasField("stats_network") && rx_rate < host.getFieldDotted("stats_network.max_rx").Double()) ? host.getFieldDotted("stats_network.max_rx").Double() : rx_rate;
     double all_rx = (host.hasField("stats_network")) ? host.getFieldDotted("stats_network.all_rx").Double() + rx_rate : rx_rate;

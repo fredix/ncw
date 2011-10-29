@@ -74,17 +74,17 @@ void Stats_memory::s_job_receive(bson::bo payload) {
     bob_memory_statistics << mongo::GENOID;
     bob_memory_statistics << "host_id" << host_id;
     bob_memory_statistics.append(created_at);
-    bob_memory_statistics << "mem_used" << payload["memory"]["mem_used"].Double()
-                       << "mem_free" << payload["memory"]["mem_free"].Double()
-                       << "mem_actual_free" << payload["memory"]["mem_actual_free"].Double()
-                       << "mem_actual_used" << payload["memory"]["mem_actual_used"].Double()
-                       << "mem_actual_free_percent" << payload["memory"]["mem_actual_free_percent"].Double()
-                       << "mem_actual_used_percent" << payload["memory"]["mem_actual_used_percent"].Double()
-                       << "swap_total" << payload["memory"]["swap_total"].Double()
-                       << "swap_used" << payload["memory"]["swap_used"].Double()
-                       << "swap_free" << payload["memory"]["swap_free"].Double()
-                       << "swap_page_in" << payload["memory"]["swap_page_in"].Double()
-                       << "swap_page_out" << payload["memory"]["swap_page_out"].Double();
+    bob_memory_statistics << "mem_used" << QString::fromStdString(payload["memory"]["mem_used"].valuestr()).toDouble()
+                       << "mem_free" << QString::fromStdString(payload["memory"]["mem_free"].valuestr()).toDouble()
+                       << "mem_actual_free" << QString::fromStdString(payload["memory"]["mem_actual_free"].valuestr()).toDouble()
+                       << "mem_actual_used" << QString::fromStdString(payload["memory"]["mem_actual_used"].valuestr()).toDouble()
+                       << "mem_actual_free_percent" << QString::fromStdString(payload["memory"]["mem_actual_free_percent"].valuestr()).toDouble()
+                       << "mem_actual_used_percent" << QString::fromStdString(payload["memory"]["mem_actual_used_percent"].valuestr()).toDouble()
+                       << "swap_total" << QString::fromStdString(payload["memory"]["swap_total"].valuestr()).toDouble()
+                       << "swap_used" << QString::fromStdString(payload["memory"]["swap_used"].valuestr()).toDouble()
+                       << "swap_free" << QString::fromStdString(payload["memory"]["swap_free"].valuestr()).toDouble()
+                       << "swap_page_in" << QString::fromStdString(payload["memory"]["swap_page_in"].valuestr()).toDouble()
+                       << "swap_page_out" << QString::fromStdString(payload["memory"]["swap_page_out"].valuestr()).toDouble();
     bo_memory_statistics = bob_memory_statistics.obj();
 
     nosql_.Insert("memory_statistics", bo_memory_statistics);

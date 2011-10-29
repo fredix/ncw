@@ -70,15 +70,10 @@ void Stats_load::s_job_receive(bson::bo payload) {
 
 
     long long counter = host.hasField("stats_load") ? host.getFieldDotted("stats_load.counter").numberLong() + 1 : 1;
-    /*
-    qint64 loadavg0 = r_hash["xml"].toHash()["loadavg0"].toFloat() * 100.00 + 0.5;
-    qint64 loadavg1 = r_hash["xml"].toHash()["loadavg1"].toFloat() * 100.00 + 0.5;
-    qint64 loadavg2 = r_hash["xml"].toHash()["loadavg2"].toFloat() * 100.00 + 0.5;
-    */
 
-    double loadavg0 = payload["load"]["loadavg0"].Double();
-    double loadavg1 = payload["load"]["loadavg1"].Double();
-    double loadavg2 = payload["load"]["loadavg2"].Double();
+    double loadavg0 = QString::fromStdString(payload["load"]["loadavg0"].valuestr()).toDouble();
+    double loadavg1 = QString::fromStdString(payload["load"]["loadavg1"].valuestr()).toDouble();
+    double loadavg2 = QString::fromStdString(payload["load"]["loadavg2"].valuestr()).toDouble();
 
 
 

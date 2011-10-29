@@ -58,7 +58,7 @@ void Zdispatch::receive_payload()
         //QString l_payload = QString::fromAscii((char*)message.data());
         bo l_payload = bo((char*)message.data());
 
-        std::cout << "l_payload : " << l_payload["cpu_hardware"] << std::endl;
+        std::cout << "l_payload : " << l_payload << std::endl;
 
         //std::cout << "BEFORE BO" << std::endl;
         //bo data = mongo::fromjson((char*)message.data());
