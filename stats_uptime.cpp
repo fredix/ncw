@@ -74,8 +74,8 @@ void Stats_uptime::s_job_receive(bson::bo payload) {
     bob_uptime_statistics << mongo::GENOID;
     bob_uptime_statistics << "host_id" << host_id;
     bob_uptime_statistics.append(created_at);
-    bob_uptime_statistics << "time" << QString::fromStdString(payload[payload["uptime"]["time"].valuestr()).toDouble()
-                          << "days" << QString::fromStdString(payload["uptime"]["days"].valuestr()).toDouble();
+    bob_uptime_statistics << "time" << QString::fromStdString(payload["uptime"]["time"].valuestr()).toDouble()
+                          << "days" << payload["uptime"]["days"].valuestr();
     bo_uptime_statistics = bob_uptime_statistics.obj();
 
     nosql_.Insert("uptime_statistics", bo_uptime_statistics);
