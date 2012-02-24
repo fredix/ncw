@@ -20,14 +20,18 @@ SOURCES += main.cpp \
     stats_uptime.cpp \
     stats_memory.cpp \
     stats_network.cpp \
-    zeromq.cpp
-LIBS += ./externals/mongodb/libmongoclient.a \
-    -lboost_system \
-    -lboost_filesystem \
-    -lboost_thread-mt \
-    -lmemcached \
-    -lQxtCore \
-    -lzmq
+    zeromq.cpp \
+    stats_filesystem.cpp \
+    dispatcher.cpp
+LIBS += /usr/local/lib/libmongoclient.a \
+        -lboost_system \
+        -lboost_filesystem \
+        -lboost_thread-mt \
+        -lmemcached \
+        -lQxtCore \
+        -lzmq
+
+INCLUDEPATH += /usr/include/qxt/
 INCLUDEPATH += /usr/include/qxt/QxtCore
 INCLUDEPATH += ./externals/
 HEADERS += main.h \
@@ -39,4 +43,6 @@ HEADERS += main.h \
     stats_uptime.h \
     stats_memory.h \
     stats_network.h \
-    zeromq.h
+    zeromq.h \
+    stats_filesystem.h \
+    dispatcher.h

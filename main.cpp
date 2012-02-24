@@ -24,7 +24,54 @@
 
 //namespace po = boost::program_options;
 
+/*
+static int s_interrupted = 0;
+static void s_signal_handler (int signal_value)
+{
+    s_interrupted = 1;
+}
+
+static void s_catch_signals (void)
+{
+    struct sigaction action;
+    //action.sa_handler = s_signal_handler;
+    action.sa_handler = Zeromq::hupSignalHandler;
+
+    action.sa_flags = 0;
+    sigemptyset (&action.sa_mask);
+    sigaction (SIGINT, &action, NULL);
+    sigaction (SIGTERM, &action, NULL);
+}
+*/
+
+// http://doc.qt.nokia.com/4.7/unix-signals.html
+static void setup_unix_signal_handlers()
+{
+    struct sigaction hup, term;
+
+    hup.sa_handler = Zeromq::hupSignalHandler;
+    sigemptyset(&hup.sa_mask);
+    hup.sa_flags = 0;
+    hup.sa_flags |= SA_RESTART;
+
+    /*if (sigaction(SIGHUP, &hup, 0) > 0)
+       return 1;*/
+
+    term.sa_handler = Zeromq::termSignalHandler;
+    sigemptyset(&term.sa_mask);
+    term.sa_flags |= SA_RESTART;
+
+    /*if (sigaction(SIGTERM, &term, 0) > 0)
+       return 2;
+
+    return 0;*/
+
+    sigaction (SIGINT, &hup, NULL);
+    sigaction (SIGTERM, &term, NULL);
+}
+
 StringToEnumMap enumToWorker;
+
 
 
 Worker::Worker()
@@ -53,33 +100,63 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
 {
 
     qDebug() << worker_type;
+    qRegisterMetaType<bson::bo>("bson::bo");
+
 
     switch (enumToWorker[worker_type])
-    {
+    {   
+    case WDISPATCHER:
+        qDebug() << "WDISPATCHER : " << worker_type ;
+        stats_worker = new Dispatcher(*this->nosql, memcached_keycache);
+
+        zeromq->dispatcher ();
+
+        this->connect(zeromq->dispatch_http, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        this->connect(zeromq->dispatch_xmpp, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        this->connect(stats_worker, SIGNAL(return_payload(bson::bo)), zeromq->dispatch_http, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
+
+        break;
+
     case WCPU:
         qDebug() << "WCPU : " << worker_type ;
+        zeromq->payloader();
         stats_worker = new Stats_cpu(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WLOAD:
+        qDebug() << "WLOAD : " << worker_type ;
+        zeromq->payloader();
         stats_worker = new Stats_load(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WMEMORY:
+        qDebug() << "WMEMORY : " << worker_type ;
+        zeromq->payloader();
         stats_worker = new Stats_memory(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WNETWORK:
-        stats_worker = new Stats_network(*this->nosql, memcached_keycache);
+        qDebug() << "WNETWORK : " << worker_type ;
+        zeromq->payloader();
+        stats_worker = new Stats_network(*this->nosql, memcached_keycache);               
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WUPTIME:
+        qDebug() << "WUPTIME : " << worker_type ;
+        zeromq->payloader();
         stats_worker = new Stats_uptime(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WPROCESS:
         qDebug() << "WPROCESS : " << worker_type ;
+        zeromq->payloader();
         stats_worker = new Stats_process(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     default:
@@ -87,9 +164,7 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
         exit(1);
     }
 
-    qRegisterMetaType<bson::bo>("bson::bo");
 
-    this->connect(zeromq->dispatch, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
     this->connect(stats_worker, SIGNAL(delete_cache(QString)), this, SLOT(s_delete_cache(QString)));
 }
 
@@ -126,6 +201,7 @@ int main(int argc, char *argv[])
     QString zeromq_port;
 
 
+    enumToWorker.insert(QString("dispatcher"), WDISPATCHER);
     enumToWorker.insert(QString("cpu"), WCPU);
     enumToWorker.insert(QString("memory"), WMEMORY);
     enumToWorker.insert(QString("network"), WNETWORK);
@@ -254,6 +330,18 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+  //  s_catch_signals ();
+
+/*
+    QThread *thread_interrupt = new QThread;
+    CatchInterrupt *signal_catch = new CatchInterrupt();
+    QObject::connect(thread_interrupt, SIGNAL(started()), signal_catch, SLOT(init()));
+    signal_catch->moveToThread(thread_interrupt);
+    thread_interrupt->start();
+*/
+
+    setup_unix_signal_handlers();
+
 
     Worker worker;
 
@@ -274,6 +362,8 @@ int main(int argc, char *argv[])
 
 
     qDebug() << "end";
+
+
 
     return nodecast_worker.exec();
 }

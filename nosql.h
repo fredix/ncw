@@ -44,10 +44,14 @@ public:
     Nosql();
     ~Nosql();
     //bo FindByElement(QString a_document, be element);
-    bo Find(QString a_document, const bo &datas);
+    bo Find(string a_document, const bo &datas);
     QBool Insert(QString a_document, bo a_datas);
     QBool Update(QString a_document, const bo &element_id, const bo &a_datas);
     bo ExtractJSON(const be &gfs_id);
+    QBool RemoveFile(const be &gfs_id);
+    bo CreateHost(bo &payload, const bo &data, const be &user_id);
+    bo CreateOsystem(bo &payload, const bo &data);
+    bo CreateOsversion(bo &data);
 
 protected:
     QBool ReadFile(const be &gfs_id);

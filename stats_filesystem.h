@@ -19,45 +19,39 @@
 ****************************************************************************/
 
 
-#ifndef STATS_H
-#define STATS_H
-/*
-#include <QDebug>
-#include <QFile>
-#include <QDomDocument>
-#include <QObject>
+#ifndef STATS_FILESYSTEM_H
+#define STATS_FILESYSTEM_H
 
-#include "mongodb/client/gridfs.h"
-#include "mongodb/bson/bson.h"
-#include "mongodb/client/dbclient.h"
-*/
-#include "libmemcached/memcached.hpp"
+#include "stats.h"
 
-#include "nosql.h"
-
-using namespace mongo;
-using namespace bson;
-
-
-
-class Stats : public QObject
+class Stats_filesystem : public Stats
 {
-    Q_OBJECT
 public:
-//    explicit stats(QObject *parent = 0);
-    Stats(Nosql& a, QObject *parent = 0);
- //   Stats();
-    ~Stats();
+    //Stats_process(QObject *parent = 0);
+      Stats_filesystem(Nosql& a, QString memcached_keycache);
+      //Stats_process();
+      ~Stats_filesystem();
+
+
+    QString cache_path;
+    //bo bo_process_statistics;
+    //list<bo> lbo_processus;
+    //bob bob_process_statistics;
+    //bo host;
 
 protected:
-     Nosql &nosql_;
+    //Nosql &nosql_;
 
-signals:
-    void delete_cache(QString pub_uuid);    
-    void return_payload(bson::bo data);
+private:
+    // QDomDocument m_xml_datas;
+
+signals:    
 
 public slots:
-     virtual void s_job_receive(bson::bo data)=0;
+    void s_job_receive(bson::bo data);
+signals:
+  //  void delete_cache(QString pub_uuid);
 };
 
-#endif // STATS_H
+
+#endif // STATS_FILESYSTEM_H

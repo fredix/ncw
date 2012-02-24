@@ -19,45 +19,23 @@
 ****************************************************************************/
 
 
-#ifndef STATS_H
-#define STATS_H
-/*
-#include <QDebug>
-#include <QFile>
-#include <QDomDocument>
-#include <QObject>
+#ifndef DISPATCHER_H
+#define DISPATCHER_H
 
-#include "mongodb/client/gridfs.h"
-#include "mongodb/bson/bson.h"
-#include "mongodb/client/dbclient.h"
-*/
-#include "libmemcached/memcached.hpp"
-
-#include "nosql.h"
-
-using namespace mongo;
-using namespace bson;
+#include "stats.h"
 
 
-
-class Stats : public QObject
+class Dispatcher : public Stats
 {
-    Q_OBJECT
 public:
-//    explicit stats(QObject *parent = 0);
-    Stats(Nosql& a, QObject *parent = 0);
- //   Stats();
-    ~Stats();
-
-protected:
-     Nosql &nosql_;
-
-signals:
-    void delete_cache(QString pub_uuid);    
-    void return_payload(bson::bo data);
+    Dispatcher(Nosql& a, QString memcached_keycache);
+    ~Dispatcher();
+    QString cache_path;
 
 public slots:
-     virtual void s_job_receive(bson::bo data)=0;
+    void s_job_receive(bson::bo data);
 };
 
-#endif // STATS_H
+
+
+#endif // DISPATCHER_H

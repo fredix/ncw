@@ -25,6 +25,8 @@
 #include <QObject>
 #include <QThread>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QSocketNotifier>
 #include <zmq.hpp>
 #include <mongodb/client/gridfs.h>
 
@@ -32,19 +34,37 @@ using namespace mongo;
 using namespace bson;
 
 
-class Zdispatch : public QObject
+class Ztracker : public QObject
 {
     Q_OBJECT
 public:
-    Zdispatch(QString a_host, QString a_port);
-    Zdispatch();
-    ~Zdispatch();
+    Ztracker(zmq::context_t *a_context, QString a_host, QString a_port);
+    ~Ztracker();
 
 
 private:
     zmq::context_t *m_context;
-    zmq::socket_t *sender;
+    zmq::socket_t *z_sender;
     zmq::message_t *z_message;
+
+    QString m_host;
+    QString m_port;
+
+public slots:
+    void init();
+};
+
+
+class Zpayload : public QObject
+{
+    Q_OBJECT
+public:
+    Zpayload(zmq::context_t *a_context, QString a_host, QString a_port);
+    ~Zpayload();
+
+
+private:
+    zmq::context_t *m_context;
     QString m_host;
     QString m_port;
 
@@ -56,19 +76,66 @@ public slots:
 };
 
 
+class Zdispatch : public QObject
+{
+    Q_OBJECT
+public:
+    Zdispatch(zmq::context_t *a_context, QString a_host, QString a_port);
+    Zdispatch();
+    ~Zdispatch();
+
+
+private:
+    zmq::context_t *m_context;
+    zmq::socket_t *z_sender;
+    zmq::message_t *z_message;
+
+    QString m_host;
+    QString m_port;
+
+signals:
+    void payload(bson::bo data);
+
+public slots:
+    void receive_payload();
+    void push_payload(bson::bo payload);
+};
+
+
 class Zeromq : public QObject
 {
     Q_OBJECT
 public:
-    Zeromq();
-    Zeromq(QString host, QString port);
+    Zeromq(QString a_host, QString a_port);
     ~Zeromq();
+    void dispatcher();
+    void payloader();
 
-    Zdispatch *dispatch;
+    Zdispatch *dispatch_http;
+    Zdispatch *dispatch_xmpp;
+    Ztracker *tracker;
+    Zpayload *payload;
+
+    // Unix signal handlers.
+    static void hupSignalHandler(int unused);
+    static void termSignalHandler(int unused);
+
+
+public slots:
+    // Qt signal handlers.
+    void handleSigHup();
+    void handleSigTerm();
 
 private:
+    zmq::context_t *m_context;
     QString m_host;
     QString m_port;
+
+    static int sighupFd[2];
+    static int sigtermFd[2];
+
+    QSocketNotifier *snHup;
+    QSocketNotifier *snTerm;
 };
 
 #endif // ZEROMQ_H

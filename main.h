@@ -23,6 +23,8 @@
 #define MAIN_H
 
 #include <iostream>
+#include <signal.h>
+
 #include <QDebug>
 #include <QDomDocument>
 #include <QxtCore/QxtCommandOptions>
@@ -31,6 +33,7 @@
 
 #include "nosql.h"
 #include "zeromq.h"
+#include "dispatcher.h"
 #include "stats_process.h"
 #include "stats_cpu.h"
 #include "stats_load.h"
@@ -40,6 +43,7 @@
 
 
 enum WorkerType {
+    WDISPATCHER=0,
     WCPU=1,
     WMEMORY=2,
     WNETWORK=3,
