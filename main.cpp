@@ -110,11 +110,9 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
         stats_worker = new Dispatcher(*this->nosql, memcached_keycache);
 
         zeromq->dispatcher ();
-
         this->connect(zeromq->dispatch_http, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         this->connect(zeromq->dispatch_xmpp, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         this->connect(stats_worker, SIGNAL(return_payload(bson::bo)), zeromq->dispatch_http, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
-
         break;
 
     case WCPU:
@@ -156,6 +154,13 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
         qDebug() << "WPROCESS : " << worker_type ;
         zeromq->payloader();
         stats_worker = new Stats_process(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case WPAYLOAD:
+        qDebug() << "WPAYLOAD : " << worker_type ;
+        zeromq->payloader();
+        stats_worker = new Get_payload(*this->nosql);
         this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
@@ -208,6 +213,8 @@ int main(int argc, char *argv[])
     enumToWorker.insert(QString("load"), WLOAD);
     enumToWorker.insert(QString("uptime"), WUPTIME);
     enumToWorker.insert(QString("process"), WPROCESS);
+    enumToWorker.insert(QString("filesystem"), WFILESYSTEM);
+    enumToWorker.insert(QString("payload"), WPAYLOAD);
 
 
 
