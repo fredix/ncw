@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -18,30 +18,33 @@
 **   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
+#ifndef PROCESS_H
+#define PROCESS_H
 
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
 
 #include "worker.h"
 
 
-class Dispatcher : public Worker
+class Process : public Worker
 {
 public:
-    Dispatcher(Nosql& a);
-    ~Dispatcher();
-    void init(QString null);
+    Process(Nosql& a);
+    ~Process();
+    void init(QString child_exec, QString process_name);
+
 
 private:
     QTimer *timer;
+    QProcess *process;
+    QString m_child_exec;
 
 private slots:
     void watchdog();
+    void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
 
 public slots:
     void s_job_receive(bson::bo data);
+
 };
 
-
-
-#endif // DISPATCHER_H
+#endif // PROCESS_H

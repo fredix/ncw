@@ -25,10 +25,11 @@
 #include <QObject>
 #include <QThread>
 #include <QDebug>
+#include <QMutex>
 #include <QCoreApplication>
 #include <QSocketNotifier>
 #include <zmq.hpp>
-#include <mongodb/client/gridfs.h>
+#include <client/gridfs.h>
 
 using namespace mongo;
 using namespace bson;
@@ -46,12 +47,16 @@ private:
     zmq::context_t *m_context;
     zmq::socket_t *z_sender;
     zmq::message_t *z_message;
+    QMutex *m_mutex;
 
     QString m_host;
     QString m_port;
 
+    QString m_uuid;
+
 public slots:
     void init();
+    void push_tracker(bson::bo tracker);
 };
 
 

@@ -21,20 +21,38 @@
 
 #include "dispatcher.h"
 
-Dispatcher::Dispatcher(Nosql& a, QString memcached_keycache) : Stats(a)
+Dispatcher::Dispatcher(Nosql& a) : Worker(a)
 {
-    cache_path.append(memcached_keycache).append(":views/report/cpu/");
-
-
-    //m_mutex->lock();
     qDebug() << "Dispatcher::Dispatcher constructer";
 
-
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
+    timer->start (5000);
 }
 
 
 Dispatcher::~Dispatcher()
+{}
+
+
+void Dispatcher::init(QString null)
 {
+    qDebug() << "!!!!! Dispatcher::Dispatcher INIT !!!!!";
+
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "name" << "dispatcher" << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
+
+
+
+void Dispatcher::watchdog()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }
 
 
@@ -48,6 +66,38 @@ void Dispatcher::s_job_receive(bson::bo data) {
 
     bo msg = data;
 
+
+
+    qDebug() << "PID : " <<  QCoreApplication::applicationPid();
+
+/*    bo payload = BSON("action" << "split" << "format" << "json" <<
+                     "workers" << BSON("cpu_usage" << "5561" <<
+                                       "load" << "5560" <<
+                                       "network" << "5562" <<
+                                       "memory" << "5563" <<
+                                       "uptime" << "5564" <<
+                                       "process" << "5565" <<
+                                       "filesystems" << "5566"
+                                       ) <<
+                     "payload" << data);
+*/
+
+
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo payload = BSON("action" << "copy" << "format" << "binary" << "path" << "/tmp/" <<
+                      "timestamp" << timestamp.toTime_t() <<
+                     "workers" << BSON("torrent" << "5570") <<
+                     "data" << data);
+
+
+
+
+    std::cout << "payload : " <<  payload << std::endl;
+
+
+
+/*
     be uuid = msg.getField("uuid");
     be created_at = msg.getField("created_at");
     be gfs_id = msg.getField("_id");
@@ -260,7 +310,7 @@ void Dispatcher::s_job_receive(bson::bo data) {
         {
             std::cout << "Payload::s_job_receive, profil not found" << std::endl;
             return;
-            /************* TODO ***************/
+            ************* TODO ***************
             //profil = nosql_.CreateProfil(l_hash, data);
         }
         //std::cout << "Payload::s_job_receive, user profil nickname : " << profil.getField("nickname") << std::endl;
@@ -288,9 +338,13 @@ void Dispatcher::s_job_receive(bson::bo data) {
         std::cout << "Payload::s_job_receive, AFTER UPDATE USER's HOSTS NUMBER" << std::endl;
     }
 
-
+*/
     qDebug() << "DISPATCHER BEFORE EMIT";
-    emit return_payload(data);
+    emit return_payload(payload);
     qDebug() << "DISPATCHER AFTER EMIT";
 
+
+    timestamp = QDateTime::currentDateTime();
+    bo tracker = BSON("type" << "worker" << "name" << "dispatcher" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }

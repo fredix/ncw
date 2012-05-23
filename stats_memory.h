@@ -22,15 +22,16 @@
 #ifndef STATS_MEMORY_H
 #define STATS_MEMORY_H
 
-#include "stats.h"
+#include "worker.h"
 
-class Stats_memory : public Stats
+class Stats_memory : public Worker
 {
 public:
     //Stats_process(QObject *parent = 0);
       Stats_memory(Nosql& a, QString memcached_keycache);
       //Stats_process();
       ~Stats_memory();
+      void init(QString null);
 
 
     QString cache_path;
@@ -43,9 +44,11 @@ protected:
     //Nosql &nosql_;
 
 private:
-    // QDomDocument m_xml_datas;
+    QTimer *timer;
 
-signals:
+private slots:
+    void watchdog();
+
 
 public slots:
     void s_job_receive(bson::bo data);

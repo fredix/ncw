@@ -19,8 +19,8 @@
 ****************************************************************************/
 
 
-#ifndef STATS_H
-#define STATS_H
+#ifndef WORKER_H
+#define WORKER_H
 /*
 #include <QDebug>
 #include <QFile>
@@ -31,6 +31,11 @@
 #include "mongodb/bson/bson.h"
 #include "mongodb/client/dbclient.h"
 */
+
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QProcess>
+#include <QTimer>
 #include "libmemcached/memcached.hpp"
 
 #include "nosql.h"
@@ -40,24 +45,32 @@ using namespace bson;
 
 
 
-class Stats : public QObject
+class Worker : public QObject
 {
     Q_OBJECT
 public:
 //    explicit stats(QObject *parent = 0);
-    Stats(Nosql& a, QObject *parent = 0);
+    Worker(Nosql& a, QObject *parent = 0);
  //   Stats();
-    ~Stats();
+    ~Worker();
+    virtual void init(QString child_exec);
 
 protected:
      Nosql &nosql_;
 
+private slots:
+     virtual void watchdog()=0;
+     virtual void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
+
+
 signals:
-    void delete_cache(QString pub_uuid);    
-    void return_payload(bson::bo data);
+    virtual void delete_cache(QString pub_uuid);
+    virtual void return_payload(bson::bo data);
+    virtual void return_tracker(bson::bo data);
+
 
 public slots:
      virtual void s_job_receive(bson::bo data)=0;
 };
 
-#endif // STATS_H
+#endif // WORKER_H

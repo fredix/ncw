@@ -21,15 +21,38 @@
 
 #include "stats_memory.h"
 
-Stats_memory::Stats_memory(Nosql& a, QString memcached_keycache) : Stats(a)
+Stats_memory::Stats_memory(Nosql& a, QString memcached_keycache) : Worker(a)
 {
     cache_path.append(memcached_keycache).append(":views/report/memory/");
+
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
+    timer->start (5000);
 }
 
 
 Stats_memory::~Stats_memory()
 {}
 
+
+void Stats_memory::init(QString null)
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "name" << "stats_memory" << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
+
+
+
+void Stats_memory::watchdog()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
 
 
 void Stats_memory::s_job_receive(bson::bo payload) {
@@ -130,15 +153,7 @@ void Stats_memory::s_job_receive(bson::bo payload) {
     emit delete_cache(cache_path + uuid.String().data());
 
 
-
-
-
-
-
-
-/*if (endCondition(message)) {
-       subscriptions.cancel(message.getDestination());
-    }*/
-
-
+    QDateTime timestamp = QDateTime::currentDateTime();
+    bo tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }

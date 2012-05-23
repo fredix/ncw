@@ -22,9 +22,16 @@
 
 #include "stats_cpu.h"
 
-Stats_cpu::Stats_cpu(Nosql& a, QString memcached_keycache) : Stats(a)
+Stats_cpu::Stats_cpu(Nosql& a, QString memcached_keycache) : Worker(a)
 {    
     cache_path.append(memcached_keycache).append(":views/report/cpu/");
+
+    qDebug() << "Dispatcher::Dispatcher constructer";
+
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
+    timer->start (5000);
 }
 
 
@@ -32,6 +39,22 @@ Stats_cpu::~Stats_cpu()
 {}
 
 
+void Stats_cpu::init(QString null)
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "name" << "stats_cpu" << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
+
+
+void Stats_cpu::watchdog()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
 
 void Stats_cpu::s_job_receive(bson::bo payload) {
 
@@ -115,4 +138,9 @@ void Stats_cpu::s_job_receive(bson::bo payload) {
 
     std::cout << "cache path : " << cache_path.toStdString() << std::endl;
     emit delete_cache(cache_path + uuid.String().data());
+
+
+    QDateTime timestamp = QDateTime::currentDateTime();
+    bo tracker = BSON("action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }

@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -22,14 +22,37 @@
 
 #include "stats_load.h"
 
-Stats_load::Stats_load(Nosql& a, QString memcached_keycache) : Stats(a)
+Stats_load::Stats_load(Nosql& a, QString memcached_keycache) : Worker(a)
 {
     cache_path.append(memcached_keycache).append(":views/report/load/");
+
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
+    timer->start (5000);
 }
 
 
 Stats_load::~Stats_load()
 {}
+
+
+void Stats_load::init(QString null)
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "name" << "stats_load" << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
+
+
+void Stats_load::watchdog()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
 
 
 
@@ -136,9 +159,9 @@ void Stats_load::s_job_receive(bson::bo payload) {
 
 
 
-/*if (endCondition(message)) {
-       subscriptions.cancel(message.getDestination());
-    }*/
+    QDateTime timestamp = QDateTime::currentDateTime();
+    bo tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 
 
 }

@@ -22,15 +22,16 @@
 #ifndef STATS_NETWORK_H
 #define STATS_NETWORK_H
 
-#include "stats.h"
+#include "worker.h"
 
-class Stats_network : public Stats
+class Stats_network : public Worker
 {
 public:
     //Stats_process(QObject *parent = 0);
       Stats_network(Nosql& a, QString memcached_keycache);
       //Stats_process();
       ~Stats_network();
+      void init(QString null);
 
 
     QString cache_path;
@@ -43,9 +44,10 @@ protected:
     //Nosql &nosql_;
 
 private:
-    // QDomDocument m_xml_datas;
+    QTimer *timer;
 
-signals:
+private slots:
+    void watchdog();
 
 public slots:
     void s_job_receive(bson::bo data);

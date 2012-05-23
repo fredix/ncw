@@ -74,18 +74,24 @@ StringToEnumMap enumToWorker;
 
 
 
-Worker::Worker()
+Zworker::Zworker()
 {
-    qDebug() << "Worker construct";
+    qDebug() << "Zworker construct";
+    worker = NULL;
+    service = NULL;
 }
 
-Worker::~Worker()
-{}
-
-
-void Worker::s_delete_cache(QString cache)
+Zworker::~Zworker()
 {
-    qDebug() << "Worker::s_delete_cache";
+    qDebug() << "DELETE ZWORKER !!!!!";
+    delete(this->nosql);
+    delete(this->zeromq);
+}
+
+
+void Zworker::s_delete_cache(QString cache)
+{
+    qDebug() << "Zworker::s_delete_cache";
 
     nodecast_memcache.rc = memcached_delete(nodecast_memcache.memc, cache.toStdString().c_str(), strlen(cache.toStdString().c_str()), (time_t)0);
 
@@ -96,7 +102,7 @@ void Worker::s_delete_cache(QString cache)
 }
 
 
-void Worker::Init(QString worker_type, QString memcached_keycache)
+void Zworker::Init(QString worker_type, QString worker_name, QString memcached_keycache, QString child_exec)
 {
 
     qDebug() << worker_type;
@@ -105,72 +111,105 @@ void Worker::Init(QString worker_type, QString memcached_keycache)
 
     switch (enumToWorker[worker_type])
     {   
+    case WSERVICE:
+        qDebug() << "WSERVICE : " << worker_type ;
+        zeromq->payloader();
+        service = new Service(*this->nosql);
+        //this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+
     case WDISPATCHER:
         qDebug() << "WDISPATCHER : " << worker_type ;
-        stats_worker = new Dispatcher(*this->nosql, memcached_keycache);
+        worker = new Dispatcher(*this->nosql);
 
         zeromq->dispatcher ();
-        this->connect(zeromq->dispatch_http, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        this->connect(zeromq->dispatch_xmpp, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        this->connect(stats_worker, SIGNAL(return_payload(bson::bo)), zeromq->dispatch_http, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
-        break;
-
-    case WCPU:
-        qDebug() << "WCPU : " << worker_type ;
-        zeromq->payloader();
-        stats_worker = new Stats_cpu(*this->nosql, memcached_keycache);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        break;
-
-    case WLOAD:
-        qDebug() << "WLOAD : " << worker_type ;
-        zeromq->payloader();
-        stats_worker = new Stats_load(*this->nosql, memcached_keycache);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        break;
-
-    case WMEMORY:
-        qDebug() << "WMEMORY : " << worker_type ;
-        zeromq->payloader();
-        stats_worker = new Stats_memory(*this->nosql, memcached_keycache);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        break;
-
-    case WNETWORK:
-        qDebug() << "WNETWORK : " << worker_type ;
-        zeromq->payloader();
-        stats_worker = new Stats_network(*this->nosql, memcached_keycache);               
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
-        break;
-
-    case WUPTIME:
-        qDebug() << "WUPTIME : " << worker_type ;
-        zeromq->payloader();
-        stats_worker = new Stats_uptime(*this->nosql, memcached_keycache);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        this->connect(zeromq->dispatch_http, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        this->connect(zeromq->dispatch_xmpp, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        this->connect(worker, SIGNAL(return_payload(bson::bo)), zeromq->dispatch_http, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
         break;
 
     case WPROCESS:
         qDebug() << "WPROCESS : " << worker_type ;
         zeromq->payloader();
-        stats_worker = new Stats_process(*this->nosql, memcached_keycache);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        process = new Process(*this->nosql);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
-    case WPAYLOAD:
+
+    case GK_CPU:
+        qDebug() << "WCPU : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_cpu(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_LOAD:
+        qDebug() << "WLOAD : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_load(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_MEMORY:
+        qDebug() << "WMEMORY : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_memory(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_NETWORK:
+        qDebug() << "WNETWORK : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_network(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_UPTIME:
+        qDebug() << "WUPTIME : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_uptime(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_PROCESSUS:
+        qDebug() << "WPROCESS : " << worker_type ;
+        zeromq->payloader();
+        worker = new Stats_process(*this->nosql, memcached_keycache);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        break;
+
+    case GK_PAYLOAD:
         qDebug() << "WPAYLOAD : " << worker_type ;
         zeromq->payloader();
-        stats_worker = new Get_payload(*this->nosql);
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), stats_worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        worker = new Get_payload(*this->nosql);
+        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
+
     default:
-        qDebug() << "default error : " << worker_type ;
+        qDebug() << "worker unknown : " << worker_type ;
+        delete(this);
         exit(1);
     }
 
+    if (worker)
+    {
+        this->connect(worker, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        this->connect(worker, SIGNAL(delete_cache(QString)), this, SLOT(s_delete_cache(QString)));
+        worker->init("");
+    }
+    else if (process)
+    {
+        this->connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        process->init(child_exec, worker_name);
+    }
+    else if (service)
+    {
+        this->connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        service->init(child_exec, worker_name);
+    }
 
-    this->connect(stats_worker, SIGNAL(delete_cache(QString)), this, SLOT(s_delete_cache(QString)));
 }
 
 NodecastMemcache::NodecastMemcache() {
@@ -180,8 +219,6 @@ NodecastMemcache::NodecastMemcache() {
 
 NodecastMemcache::~NodecastMemcache()
 {}
-
-
 
 
 
@@ -197,6 +234,7 @@ int main(int argc, char *argv[])
     bool debug;
     bool verbose;
     QString worker_type;
+    QString worker_name;
     QString memcached_ip;
     QString memcached_keycache;
     int memcached_port;
@@ -204,17 +242,21 @@ int main(int argc, char *argv[])
     QString mongodb_base;
     QString zeromq_ip;
     QString zeromq_port;
+    QString child_exec;
+
 
 
     enumToWorker.insert(QString("dispatcher"), WDISPATCHER);
-    enumToWorker.insert(QString("cpu"), WCPU);
-    enumToWorker.insert(QString("memory"), WMEMORY);
-    enumToWorker.insert(QString("network"), WNETWORK);
-    enumToWorker.insert(QString("load"), WLOAD);
-    enumToWorker.insert(QString("uptime"), WUPTIME);
+    enumToWorker.insert(QString("service"), WSERVICE);
     enumToWorker.insert(QString("process"), WPROCESS);
-    enumToWorker.insert(QString("filesystem"), WFILESYSTEM);
-    enumToWorker.insert(QString("payload"), WPAYLOAD);
+    enumToWorker.insert(QString("gk_cpu"), GK_CPU);
+    enumToWorker.insert(QString("gk_memory"), GK_MEMORY);
+    enumToWorker.insert(QString("gk_network"), GK_NETWORK);
+    enumToWorker.insert(QString("gk_load"), GK_LOAD);
+    enumToWorker.insert(QString("gk_uptime"), GK_UPTIME);
+    enumToWorker.insert(QString("gk_processus"), GK_PROCESSUS);
+    enumToWorker.insert(QString("gk_filesystem"), GK_FILESYSTEM);
+    enumToWorker.insert(QString("gk_payload"), GK_PAYLOAD);
 
 
 
@@ -225,8 +267,12 @@ int main(int argc, char *argv[])
     QxtCommandOptions options;
     options.add("debug", "show debug informations");
     options.alias("debug", "d");
-    options.add("worker-type", "set the worker type (cpu|memory|network|load|uptime|process)", QxtCommandOptions::Required);
+    options.add("worker-type", "set the worker type (dispatcher|service|process|cpu|memory|network|load|uptime|processus)", QxtCommandOptions::Required);
     options.alias("worker-type", "wt");
+
+    options.add("worker-name", "set the worker name", QxtCommandOptions::Optional);
+    options.alias("worker-name", "wn");
+
     options.add("memcached-ip", "set the memcached ip", QxtCommandOptions::Required);
     options.alias("memcached-ip", "mc");
     options.add("memcached-port", "set the memcached port", QxtCommandOptions::Required);
@@ -242,6 +288,10 @@ int main(int argc, char *argv[])
     options.alias("zeromq-ip", "zip");
     options.add("zeromq-port", "set the zeromq port", QxtCommandOptions::Required);
     options.alias("zeromq-port", "zpp");
+
+    options.add("exec", "set the exec program to launch", QxtCommandOptions::Optional);
+    options.alias("exec", "ex");
+
 
     options.add("verbose", "show more information about the process; specify twice for more detail", QxtCommandOptions::AllowMultiple);
     options.alias("verbose", "v");
@@ -262,6 +312,11 @@ int main(int argc, char *argv[])
         options.showUsage();
         return -1;
     }
+
+    if(options.count("worker-name")) {
+        worker_name = options.value("worker-name").toString();
+    }
+
 
 
     if(options.count("memcached-port")) {
@@ -337,7 +392,13 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-  //  s_catch_signals ();
+
+    if(options.count("exec")) {
+        child_exec = options.value("exec").toString();
+    }
+
+
+    //  s_catch_signals ();
 
 /*
     QThread *thread_interrupt = new QThread;
@@ -349,23 +410,20 @@ int main(int argc, char *argv[])
 
     setup_unix_signal_handlers();
 
+    Zworker *zworker = new Zworker;
+    zworker->nodecast_memcache.memc= memcached_create(NULL);
+    zworker->nodecast_memcache.servers= memcached_server_list_append(zworker->nodecast_memcache.servers, memcached_ip.toAscii(), memcached_port, &zworker->nodecast_memcache.rc);
+    zworker->nodecast_memcache.rc= memcached_server_push(zworker->nodecast_memcache.memc, zworker->nodecast_memcache.servers);
 
-    Worker worker;
-
-    worker.nodecast_memcache.memc= memcached_create(NULL);
-    worker.nodecast_memcache.servers= memcached_server_list_append(worker.nodecast_memcache.servers, memcached_ip.toAscii(), memcached_port, &worker.nodecast_memcache.rc);
-    worker.nodecast_memcache.rc= memcached_server_push(worker.nodecast_memcache.memc, worker.nodecast_memcache.servers);
-
-    if (worker.nodecast_memcache.rc == MEMCACHED_SUCCESS)
+    if (zworker->nodecast_memcache.rc == MEMCACHED_SUCCESS)
       qDebug() << "Added memcached server successfully";
     else
-      qDebug() << "Couldn't add memcached server: " << memcached_strerror(worker.nodecast_memcache.memc, worker.nodecast_memcache.rc);
+      qDebug() << "Couldn't add memcached server: " << memcached_strerror(zworker->nodecast_memcache.memc, zworker->nodecast_memcache.rc);
 
 
-    worker.nosql = new Nosql(mongodb_ip, mongodb_base);
-    worker.zeromq = new Zeromq(zeromq_ip, zeromq_port);
-
-    worker.Init(worker_type, memcached_keycache);
+    zworker->nosql = new Nosql(mongodb_ip, mongodb_base);
+    zworker->zeromq = new Zeromq(zeromq_ip, zeromq_port);
+    zworker->Init(worker_type, worker_name, memcached_keycache, child_exec);
 
 
     qDebug() << "end";

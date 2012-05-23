@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -22,14 +22,19 @@
 #ifndef GET_PAYLOAD_H
 #define GET_PAYLOAD_H
 
-#include "stats.h"
+#include "worker.h"
+#include <QDateTime>
 
-
-class Get_payload : public Stats
+class Get_payload : public Worker
 {
 public:
     Get_payload(Nosql& a);
     ~Get_payload();
+    void init();
+
+private:
+    void watchdog();
+    QTimer *timer;
 
 
 public slots:

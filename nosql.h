@@ -27,9 +27,9 @@
 #include <QFile>
 #include <QDebug>
 #include <QVariant>
-#include "mongodb/client/gridfs.h"
-#include "mongodb/bson/bson.h"
-#include "mongodb/client/dbclient.h"
+#include "client/gridfs.h"
+#include "bson/bson.h"
+#include "client/dbclient.h"
 
 using namespace mongo;
 using namespace bson;
@@ -47,6 +47,7 @@ public:
     bo Find(string a_document, const bo &datas);
     QBool Insert(QString a_document, bo a_datas);
     QBool Update(QString a_document, const bo &element_id, const bo &a_datas);
+    QBool Addtoarray(QString a_document, const bo &element_id, const bo &a_datas);
     bo ExtractJSON(const be &gfs_id);
     QBool RemoveFile(const be &gfs_id);
     bo CreateHost(bo &payload, const bo &data, const be &user_id);

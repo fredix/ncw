@@ -27,37 +27,46 @@ int Zeromq::sigtermFd[2]={};
 
 Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context)
 {
+    m_mutex = new QMutex();
+
     m_host = a_host;
     m_port = a_port;
-    // Prepare our context and socket
+
+    // Prepare our context and socket        
+    z_message = new zmq::message_t(2);
     z_sender = new zmq::socket_t (*m_context, ZMQ_REQ);
 
+    uint64_t hwm = 5000;
+    zmq_setsockopt (z_sender, ZMQ_HWM, &hwm, sizeof (hwm));
 }
 
 
 void Ztracker::init()
 {
-    std::cout << "Connecting to hello world server…" << std::endl;
+    std::cout << "Connecting to the ncs tracker" << std::endl;
     z_sender->connect ("tcp://localhost:5569");
 
     // Do 10 requests, waiting each time for a response
-    for (int request_nbr = 0; request_nbr != 10; request_nbr++) {
-        zmq::message_t request (6);
-        memcpy ((void *) request.data (), "Hello", 5);
-        std::cout << "Sending Hello " << request_nbr << "…" << std::endl;
-        z_sender->send (request);
+    //for (int request_nbr = 0; request_nbr != 2; request_nbr++) {
 
-        // Get the reply.
-        zmq::message_t reply;
-        z_sender->recv (&reply);
-        std::cout << "Received : " << (char*) reply.data() << request_nbr << std::endl;
+    bo ping = BSON("type" << "init" << "action" << "ping");
+
+    z_message->rebuild(ping.objsize());
+    memcpy ((void *) z_message->data (), (char*)ping.objdata(), ping.objsize());
+  //  std::cout << "Sending Hello " << request_nbr << "…" << std::endl;
+    z_sender->send (*z_message);
+
+    // Get the reply.
+    zmq::message_t reply;
+    z_sender->recv (&reply);
+    std::cout << "Received : " << (char*) reply.data() << std::endl;
 
       /*  if (s_interrupted) {
                     printf ("W: interrupt received, killing server…\n");
                     qApp->exit();
                 }*/
 
-    }
+    //}
 }
 
 Ztracker::~Ztracker()
@@ -67,6 +76,55 @@ Ztracker::~Ztracker()
 
 
 
+void Ztracker::push_tracker(bson::bo payload)
+{
+    m_mutex->lock();
+    std::cout << "Ztracker::push_tracker\r\n" << std::endl;
+
+    std::cout << "TRACKER : " << payload << std::endl;
+
+
+    bo l_payload;
+
+    if (payload["action"].str() != "register")
+    {
+        l_payload = BSON("payload" << payload << "uuid" << m_uuid.toStdString());
+
+        std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
+    }
+    else
+    {
+        qDebug() << "REGISTER WORKER";
+        l_payload = BSON("payload" << payload);
+    }
+
+    /****** PUSH API PAYLOAD *******/
+    z_message->rebuild(l_payload.objsize());
+    memcpy(z_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
+    z_sender->send(*z_message);
+    /************************/
+
+    // Get the reply.
+    zmq::message_t reply;
+    z_sender->recv (&reply);
+
+    bo r_payload = bo((char*)reply.data());
+
+    std::cout << "Received : " << r_payload << std::endl;
+
+    if (r_payload.hasField("uuid"))
+    {
+        std::cout << "UUID : " << r_payload["uuid"] << std::endl;
+        m_uuid = QString::fromStdString(r_payload["uuid"].str());
+    }
+    else
+    {
+        std::cout << "STATUS : " << r_payload["status"] << std::endl;
+    }
+
+
+    m_mutex->unlock();
+}
 
 
 Zpayload::~Zpayload()
@@ -86,6 +144,12 @@ void Zpayload::receive_payload()
 
     //  Socket to receive messages on
     zmq::socket_t receiver(*m_context, ZMQ_PULL);
+
+
+    uint64_t hwm = 50000;
+    zmq_setsockopt (receiver, ZMQ_HWM, &hwm, sizeof (hwm));
+
+
     receiver.connect(connection_string.toAscii().data());
 
 
@@ -166,7 +230,9 @@ void Zdispatch::push_payload(bson::bo payload)
 
 
 Zeromq::~Zeromq()
-{}
+{
+    qDebug() << "Zeromq DELETE !";
+}
 
 
 Zeromq::Zeromq(QString a_host, QString a_port) : m_host(a_host), m_port(a_port)

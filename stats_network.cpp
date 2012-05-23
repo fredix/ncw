@@ -22,15 +22,38 @@
 
 #include "stats_network.h"
 
-Stats_network::Stats_network(Nosql& a, QString memcached_keycache) : Stats(a)
+Stats_network::Stats_network(Nosql& a, QString memcached_keycache) : Worker(a)
 {
     cache_path.append(memcached_keycache).append(":views/report/network/");
+
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
+    timer->start (5000);
 }
 
 
 Stats_network::~Stats_network()
 {}
 
+
+void Stats_network::init(QString null)
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "name" << "stats_network" << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
+
+
+
+void Stats_network::watchdog()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    bo tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
+}
 
 
 void Stats_network::s_job_receive(bson::bo payload) {
@@ -129,9 +152,8 @@ void Stats_network::s_job_receive(bson::bo payload) {
     emit delete_cache(cache_path + uuid.String().data());
 
 
-/*if (endCondition(message)) {
-       subscriptions.cancel(message.getDestination());
-    }*/
 
-
+    QDateTime timestamp = QDateTime::currentDateTime();
+    bo tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }

@@ -18,30 +18,37 @@
 **   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
-
-#include "worker.h"
+#ifndef SERVICE_H
+#define SERVICE_H
 
 
-class Dispatcher : public Worker
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QProcess>
+#include <QTimer>
+#include "nosql.h"
+
+
+class Service : public QObject
 {
+    Q_OBJECT
 public:
-    Dispatcher(Nosql& a);
-    ~Dispatcher();
-    void init(QString null);
+    Service(Nosql& a, QObject *parent = 0);
+    ~Service();
+    void init(QString child_exec, QString service_name);
+
+protected:
+     Nosql &nosql_;
 
 private:
     QTimer *timer;
+    QProcess *child_process;
 
 private slots:
-    void watchdog();
+     void watchdog();
 
-public slots:
-    void s_job_receive(bson::bo data);
+signals:
+    void return_tracker(bson::bo data);
 };
 
-
-
-#endif // DISPATCHER_H
+#endif // SERVICE_H

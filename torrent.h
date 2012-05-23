@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -18,30 +18,53 @@
 **   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-
-#ifndef DISPATCHER_H
-#define DISPATCHER_H
+#ifndef TORRENT_H
+#define TORRENT_H
 
 #include "worker.h"
 
+#include <iostream>
+#include <fstream>
+#include <iterator>
+#include <iomanip>
 
-class Dispatcher : public Worker
+#include "libtorrent/entry.hpp"
+#include "libtorrent/bencode.hpp"
+#include "libtorrent/torrent_info.hpp"
+#include "libtorrent/file.hpp"
+#include "libtorrent/storage.hpp"
+#include "libtorrent/hasher.hpp"
+#include "libtorrent/create_torrent.hpp"
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/bind.hpp>
+
+using namespace boost::filesystem;
+using namespace libtorrent;
+
+
+
+
+class Torrent: public Worker
 {
 public:
-    Dispatcher(Nosql& a);
-    ~Dispatcher();
+    Torrent(Nosql &a);
+    ~Torrent();
     void init(QString null);
+
 
 private:
     QTimer *timer;
 
+
 private slots:
     void watchdog();
+
 
 public slots:
     void s_job_receive(bson::bo data);
 };
 
-
-
-#endif // DISPATCHER_H
+#endif // TORRENT_H

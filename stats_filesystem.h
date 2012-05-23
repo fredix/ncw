@@ -22,15 +22,17 @@
 #ifndef STATS_FILESYSTEM_H
 #define STATS_FILESYSTEM_H
 
-#include "stats.h"
+#include "worker.h"
 
-class Stats_filesystem : public Stats
+class Stats_filesystem : public Worker
 {
 public:
     //Stats_process(QObject *parent = 0);
       Stats_filesystem(Nosql& a, QString memcached_keycache);
       //Stats_process();
       ~Stats_filesystem();
+      void init(QString null);
+
 
 
     QString cache_path;
@@ -43,14 +45,14 @@ protected:
     //Nosql &nosql_;
 
 private:
-    // QDomDocument m_xml_datas;
+    QTimer *timer;
 
-signals:    
+private slots:
+    void watchdog();
+
 
 public slots:
     void s_job_receive(bson::bo data);
-signals:
-  //  void delete_cache(QString pub_uuid);
 };
 
 

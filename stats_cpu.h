@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -22,15 +22,16 @@
 #ifndef STATS_CPU_H
 #define STATS_CPU_H
 
-#include "stats.h"
+#include "worker.h"
 
-class Stats_cpu : public Stats
+class Stats_cpu : public Worker
 {
 public:
     //Stats_process(QObject *parent = 0);
       Stats_cpu(Nosql& a, QString memcached_keycache);
       //Stats_process();
       ~Stats_cpu();
+      void init(QString null);
 
 
     QString cache_path;
@@ -42,10 +43,13 @@ public:
 protected:
     //Nosql &nosql_;
 
-private:
-    // QDomDocument m_xml_datas;
 
-signals:
+private:
+    QTimer *timer;
+
+private slots:
+    void watchdog();
+
 
 public slots:
     void s_job_receive(bson::bo data);

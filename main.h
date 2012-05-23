@@ -34,22 +34,29 @@
 #include "nosql.h"
 #include "zeromq.h"
 #include "dispatcher.h"
+#include "service.h"
+#include "process.h"
 #include "stats_process.h"
 #include "stats_cpu.h"
 #include "stats_load.h"
 #include "stats_uptime.h"
 #include "stats_memory.h"
 #include "stats_network.h"
+#include "get_payload.h"
 
 
 enum WorkerType {
-    WDISPATCHER=0,
-    WCPU=1,
-    WMEMORY=2,
-    WNETWORK=3,
-    WLOAD=4,
-    WUPTIME=5,
-    WPROCESS=6
+    WSERVICE=1,
+    WDISPATCHER=2,
+    WPROCESS=3,
+    GK_CPU=4,
+    GK_MEMORY=5,
+    GK_NETWORK=6,
+    GK_LOAD=7,
+    GK_UPTIME=8,
+    GK_PROCESSUS=9,
+    GK_FILESYSTEM=10,
+    GK_PAYLOAD=11
 };
 
 typedef QMap<QString, WorkerType> StringToEnumMap;
@@ -70,19 +77,19 @@ public:
 
 
 
-class Worker : public QObject
+class Zworker : public QObject
 {
     Q_OBJECT
 public:
-    Worker();
-    ~Worker();
-    void Init(QString worker_type, QString memcached_keycache);
+    Zworker();
+    ~Zworker();
+    void Init(QString worker_type, QString worker_name, QString memcached_keycache, QString child_exec);
     NodecastMemcache nodecast_memcache;
     Nosql *nosql;
-    //Amqp *amqp;
     Zeromq *zeromq;
-    //AmqpListener *listener;
-    Stats *stats_worker;
+    Worker *worker;
+    Process *process;
+    Service *service;
 
     // params
 
@@ -91,8 +98,6 @@ public:
 public slots:
     void s_delete_cache(QString pub_uuid);
 };
-
-
 
 
 #endif // MAIN_H

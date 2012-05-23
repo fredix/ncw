@@ -19,18 +19,32 @@
 ****************************************************************************/
 
 
-#include "stats.h"
+#include "worker.h"
 
-Stats::Stats(Nosql& a, QObject *parent) : nosql_(a), QObject(parent)
+Worker::Worker(Nosql& a, QObject *parent) : nosql_(a), QObject(parent)
 {}
 
 
-Stats::~Stats()
+Worker::~Worker()
 {}
 
 
-void Stats::s_job_receive(bson::bo data)
+
+void Worker::init(QString child_exec)
+{}
+
+
+void Worker::watchdog()
+{}
+
+void Worker::s_job_receive(bson::bo data)
 {
-    qDebug() << "Stats::s_mother_job_receive";
+    qDebug() << "Worker::s_mother_job_receive";
 }
 
+
+
+void Worker::process_finished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    qDebug() << "Worker::process_finished exitcode : " << exitCode << " , exitStatus : " << exitStatus;
+}

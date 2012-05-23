@@ -60,7 +60,9 @@ Nosql::Nosql(QString a_server, QString a_database) : m_server(a_server), m_datab
 
 
 Nosql::~Nosql()
-{}
+{
+    qDebug() << "Nosql DELETE !";
+}
 
 
 bo Nosql::Find(string a_document, const bo &datas)
@@ -283,6 +285,26 @@ QBool Nosql::Update(QString a_document, const bo &element_id, const bo &a_datas)
 }
 
 
+
+QBool Nosql::Addtoarray(QString a_document, const bo &element_id, const bo &a_datas)
+{
+    qDebug() << "Nosql::Addtoarray";
+    QString tmp;
+    bo data = BSON( "$addToSet" << a_datas);
+
+    tmp.append(m_database).append(".").append(a_document);
+    qDebug() << "Nosql::Addtoarray tmp : " << tmp;
+
+ try {
+        this->m_mongo_connection.update(tmp.toAscii().data(), mongo::Query(element_id), data);
+        qDebug() << m_server + "." + a_document + " updated";
+        return QBool(true);
+    }
+    catch(mongo::DBException &e ) {
+        std::cout << "caught on update into " << m_server.toAscii().data() << "." << a_document.toAscii().data() << " : " << e.what() << std::endl;
+        return QBool(false);
+    }
+}
 
 
 
