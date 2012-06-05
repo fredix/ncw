@@ -1,0 +1,6 @@
+[submodule "externals/mongodb"]
+	path = externals/mongodb
+	url = git://github.com/nodecast/mongodb.git
+[submodule "externals/libqxt"]
+	path = externals/libqxt
+	url = git://github.com/nodecast/libqxt.git
