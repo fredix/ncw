@@ -3,9 +3,8 @@ ncw is the nodecast worker
 INSTALL
 =======
 
-first, make some links in the externals directory :
-cd externals
-ln -s mongodb-src-r2.0.4 mongodb
+first, get submodule libraries :
+git submodule update --init
 
 If you prefer to use your system's libraries, you should modify the ncw.pro
 
@@ -13,6 +12,7 @@ If you prefer to use your system's libraries, you should modify the ncw.pro
 second, make the mongodb client :
 cd externals/mongodb
 scons mongoclient
+sudo cp libmongoclient.a /usr/local/lib
 
 last, make the nodecast worker :
 qmake
@@ -23,21 +23,12 @@ USE
 ===
 
 Launch a worker :
-ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --zeromq-ip=127.0.0.1 --zeromq-port=5560 --worker-type=load
+./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=dispatcher
+
+./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="ps" --exec="ps"
 
 Launch a service :
-ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --zeromq-ip=127.0.0.1 --zeromq-port=5560 --worker-type=service  --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
-
-
-zeromq-port depend of the worker type :
-dispatcher => 5556
-load =>    5560
-cpu =>     5561
-network => 5562
-memory =>  5563
-uptime =>  5564
-process => 5565
-
+./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=service  --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
 
 
 TEST API
@@ -47,6 +38,6 @@ curl -H "X-nodename: dev1" --user "fredix@gmail.com:k5f2PheX" http://127.0.0.1:4
 
 curl -H "X-task: ps" -H "X-node-uuid: d4bd950b-7a04-4ff3-bf73-f840947d1171" -H "X-node-password: 69df62ab-4084-4e22-b788-6803c80c9931" -H "X-payloadfilename: main.h" -X POST --data-binary @main.h --user "fredix@gmail.com:k5f2PheX" http://127.0.0.1:4567/payload/create
 
-../bin/mongodb-linux-x86_64-2.0.4/bin/mongofiles -d yourbase list
+../bin/mongodb/bin/mongofiles -d yourbase list
 
 contact : fredix at nodecast dot net
