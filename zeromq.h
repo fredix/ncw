@@ -28,8 +28,12 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QSocketNotifier>
+
+#include <boost/cstdint.hpp>
+#include <boost/asio.hpp>
 #include <zmq.hpp>
-#include <client/gridfs.h>
+#include "bson/bson.h"
+
 
 using namespace mongo;
 using namespace bson;
@@ -41,7 +45,7 @@ class Ztracker : public QObject
 public:
     Ztracker(zmq::context_t *a_context, QString a_host, QString a_port);
     ~Ztracker();
-
+    QString m_worker_port;
 
 private:
     zmq::context_t *m_context;
@@ -51,8 +55,10 @@ private:
 
     QString m_host;
     QString m_port;
-
     QString m_uuid;
+
+signals:
+    void worker_port(QString worker_port);
 
 public slots:
     void init();
@@ -64,7 +70,7 @@ class Zpayload : public QObject
 {
     Q_OBJECT
 public:
-    Zpayload(zmq::context_t *a_context, QString a_host, QString a_port);
+    Zpayload(zmq::context_t *a_context, QString a_host);
     ~Zpayload();
 
 
@@ -73,11 +79,11 @@ private:
     QString m_host;
     QString m_port;
 
-signals:
+signals:    
     void payload(bson::bo data);
 
-public slots:
-    void receive_payload();
+public slots:    
+    void receive_payload(QString worker_port);
 };
 
 
@@ -113,11 +119,8 @@ class Zeromq : public QObject
 public:
     Zeromq(QString a_host, QString a_port);
     ~Zeromq();
-    void dispatcher();
     void payloader();
 
-    Zdispatch *dispatch_http;
-    Zdispatch *dispatch_xmpp;
     Ztracker *tracker;
     Zpayload *payload;
 
@@ -132,6 +135,7 @@ public slots:
     void handleSigTerm();
 
 private:
+    QMutex *m_port_mutex;
     zmq::context_t *m_context;
     QString m_host;
     QString m_port;

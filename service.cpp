@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -20,7 +20,7 @@
 
 #include "service.h"
 
-Service::Service(Nosql& a, QObject *parent) : nosql_(a), QObject(parent)
+Service::Service(QObject *parent) : QObject(parent)
 {
     qDebug() << "Service::Service constructer";
     child_process = new QProcess();

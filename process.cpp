@@ -20,7 +20,7 @@
 
 #include "process.h"
 
-Process::Process(Nosql& a) : Worker(a)
+Process::Process() : Worker()
 {
     process = new QProcess();
     connect(process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(process_finished(int,QProcess::ExitStatus)));
@@ -38,13 +38,14 @@ Process::~Process()
 }
 
 
-void Process::init(QString child_exec, QString process_name)
+void Process::init(QString child_exec, QString a_process_name)
 {
-    QDateTime timestamp = QDateTime::currentDateTime();
+    QDateTime timestamp = QDateTime::currentDateTime();    
 
-    m_child_exec = child_exec;
+    m_child_exec = child_exec;     
+    m_process_name = a_process_name;
 
-    bo tracker = BSON("type" << "worker" << "name" << process_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    BSONObj tracker = BSON("type" << "worker" << "name" << m_process_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 }
 
@@ -53,7 +54,7 @@ void Process::watchdog()
 {
     QDateTime timestamp = QDateTime::currentDateTime();
 
-    bo tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    BSONObj tracker = BSON("type" << "worker" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 }
 
@@ -63,14 +64,28 @@ void Process::watchdog()
 void Process::s_job_receive(bson::bo data) {
 
     qDebug() << "process::s_job_receive";
+
+    BSONElement r_datas = data.getField("datas");
+    BSONElement session_uuid = data.getField("session_uuid");
+    //data.getField("step_id").Obj().getObjectID(step_id);
+
+    //std::cout << "step_id " << step_id << std::endl;
+    //be step_id;
+    //data.getObjectID (step_id);
+
     std::cout << "RECEIVE MESSAGE : " << data << std::endl;
 
+
+    QString param;
+
     QDateTime timestamp = QDateTime::currentDateTime();
-    bo tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "receive" << "timestamp" << timestamp.toTime_t());
+    BSONObj tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "receive" << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
+    param.append(" ").append(QString::fromStdString(r_datas.str()));
+
     qDebug() << "!!!!   EXEC PROCESS : " << m_child_exec;
-    process->start(m_child_exec);
+    process->start(m_child_exec + param);
     process->waitForFinished(-1);
 
 
@@ -78,19 +93,26 @@ void Process::s_job_receive(bson::bo data) {
     tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
-    //be created_at = payload["headers"]["created_at"];
-    //cout << created_at.jsonString(TenGen) << endl;
+    BSONObjBuilder b_datas;
+    b_datas << "type" << "worker";
+    b_datas.append(session_uuid);
+    b_datas << "name" << m_process_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << m_output.toStdString() << "exitcode" << m_exitcode << "exitstatus" << m_exitstatus;
 
-    //be uuid = payload["headers"]["uuid"];
 
+    BSONObj s_datas = b_datas.obj();
+
+    std::cout << "s_datas : " << s_datas << std::endl;
+
+    qDebug() << "WORKER PROCESS BEFORE EMIT";
+    emit return_tracker(s_datas);
+    qDebug() << "WORKER PROCESS AFTER EMIT";
 }
 
 void Process::process_finished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     qDebug() << "Process::process_finished exitcode : " << exitCode << " , exitStatus : " << exitStatus;
-
-    qDebug() <<  process->readAllStandardOutput ();
-
-
-
+    m_output = process->readAllStandardOutput ();
+    m_exitcode = exitCode;
+    m_exitstatus = exitStatus;
+    qDebug() <<  m_output;
 }

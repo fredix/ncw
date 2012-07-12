@@ -28,15 +28,19 @@
 class Process : public Worker
 {
 public:
-    Process(Nosql& a);
+    Process();
     ~Process();
-    void init(QString child_exec, QString process_name);
+    void init(QString child_exec, QString a_process_name);
 
 
 private:
     QTimer *timer;
     QProcess *process;
     QString m_child_exec;
+    QString m_process_name;
+    QString m_output;
+    int m_exitcode;
+    int m_exitstatus;
 
 private slots:
     void watchdog();

@@ -26,19 +26,16 @@
 #include <QDateTime>
 #include <QProcess>
 #include <QTimer>
-#include "nosql.h"
+#include "worker.h"
 
 
 class Service : public QObject
 {
     Q_OBJECT
 public:
-    Service(Nosql& a, QObject *parent = 0);
+    Service(QObject *parent = 0);
     ~Service();
     void init(QString child_exec, QString service_name);
-
-protected:
-     Nosql &nosql_;
 
 private:
     QTimer *timer;

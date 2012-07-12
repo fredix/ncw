@@ -21,24 +21,14 @@
 
 #ifndef WORKER_H
 #define WORKER_H
-/*
+
 #include <QDebug>
-#include <QFile>
-#include <QDomDocument>
-#include <QObject>
-
-#include "mongodb/client/gridfs.h"
-#include "mongodb/bson/bson.h"
-#include "mongodb/client/dbclient.h"
-*/
-
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QProcess>
 #include <QTimer>
-#include "libmemcached/memcached.hpp"
 
-#include "nosql.h"
+#include "bson/bson.h"
 
 using namespace mongo;
 using namespace bson;
@@ -49,14 +39,10 @@ class Worker : public QObject
 {
     Q_OBJECT
 public:
-//    explicit stats(QObject *parent = 0);
-    Worker(Nosql& a, QObject *parent = 0);
- //   Stats();
+    Worker(QObject *parent = 0);
     ~Worker();
     virtual void init(QString child_exec);
 
-protected:
-     Nosql &nosql_;
 
 private slots:
      virtual void watchdog()=0;
@@ -64,7 +50,6 @@ private slots:
 
 
 signals:
-    virtual void delete_cache(QString pub_uuid);
     virtual void return_payload(bson::bo data);
     virtual void return_tracker(bson::bo data);
 

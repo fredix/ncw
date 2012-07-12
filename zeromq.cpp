@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -34,6 +34,7 @@ Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : 
 
     // Prepare our context and socket        
     z_message = new zmq::message_t(2);
+
     z_sender = new zmq::socket_t (*m_context, ZMQ_REQ);
 
     uint64_t hwm = 5000;
@@ -43,13 +44,18 @@ Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : 
 
 void Ztracker::init()
 {
+    m_mutex->lock();
+
     std::cout << "Connecting to the ncs tracker" << std::endl;
-    z_sender->connect ("tcp://localhost:5569");
+    //z_sender->connect ("tcp://localhost:5569");
+
+    QString connection_string = "tcp://" + m_host + ":" + m_port;
+    z_sender->connect (connection_string.toAscii().data());
 
     // Do 10 requests, waiting each time for a response
     //for (int request_nbr = 0; request_nbr != 2; request_nbr++) {
 
-    bo ping = BSON("type" << "init" << "action" << "ping");
+    bo ping = BSON("payload" << BSON("type" << "init" << "action" << "ping"));
 
     z_message->rebuild(ping.objsize());
     memcpy ((void *) z_message->data (), (char*)ping.objdata(), ping.objsize());
@@ -60,6 +66,9 @@ void Ztracker::init()
     zmq::message_t reply;
     z_sender->recv (&reply);
     std::cout << "Received : " << (char*) reply.data() << std::endl;
+
+
+    m_mutex->unlock();
 
       /*  if (s_interrupted) {
                     printf ("W: interrupt received, killing server…\n");
@@ -80,9 +89,7 @@ void Ztracker::push_tracker(bson::bo payload)
 {
     m_mutex->lock();
     std::cout << "Ztracker::push_tracker\r\n" << std::endl;
-
     std::cout << "TRACKER : " << payload << std::endl;
-
 
     bo l_payload;
 
@@ -99,6 +106,8 @@ void Ztracker::push_tracker(bson::bo payload)
     }
 
     /****** PUSH API PAYLOAD *******/
+    std::cout << "PUSH PAYLOAD : " <<  l_payload << std::endl;
+
     z_message->rebuild(l_payload.objsize());
     memcpy(z_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
     z_sender->send(*z_message);
@@ -116,6 +125,9 @@ void Ztracker::push_tracker(bson::bo payload)
     {
         std::cout << "UUID : " << r_payload["uuid"] << std::endl;
         m_uuid = QString::fromStdString(r_payload["uuid"].str());
+        m_worker_port = QString::number(r_payload["port"].numberInt());
+
+        emit worker_port(m_worker_port);
     }
     else
     {
@@ -131,14 +143,15 @@ Zpayload::~Zpayload()
 {}
 
 
-Zpayload::Zpayload(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context), m_host(a_host), m_port(a_port)
+Zpayload::Zpayload(zmq::context_t *a_context, QString a_host) : m_context(a_context), m_host(a_host)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
 }
 
-void Zpayload::receive_payload()
+void Zpayload::receive_payload(QString worker_port)
 {
-    QString connection_string = "tcp://" + m_host + ":" + m_port;
+    //QString connection_string = "tcp://" + m_host + ":" + m_port;
+    QString connection_string = "tcp://" + m_host + ":" + worker_port;
 
     qDebug() << "connection_string : " << connection_string;
 
@@ -188,6 +201,11 @@ Zdispatch::Zdispatch(zmq::context_t *a_context, QString a_host, QString a_port) 
 
     z_message = new zmq::message_t(2);
     z_sender = new zmq::socket_t(*m_context, ZMQ_PUSH);
+
+    uint64_t hwm = 50000;
+    zmq_setsockopt (z_sender, ZMQ_HWM, &hwm, sizeof (hwm));
+
+
     z_sender->connect("tcp://*:5559");
 }
 
@@ -224,7 +242,8 @@ void Zdispatch::push_payload(bson::bo payload)
     qDebug() << "return Zdispatch::return_payload";
     z_message->rebuild(payload.objsize());
     memcpy(z_message->data(), (char*)payload.objdata(), payload.objsize());
-    z_sender->send(*z_message, ZMQ_NOBLOCK);
+    //z_sender->send(*z_message, ZMQ_NOBLOCK);
+    z_sender->send(*z_message);
     /************************/
 }
 
@@ -254,7 +273,7 @@ Zeromq::Zeromq(QString a_host, QString a_port) : m_host(a_host), m_port(a_port)
 
 
     QThread *thread_tracker = new QThread;
-    tracker = new Ztracker(m_context, m_host, "5569");
+    tracker = new Ztracker(m_context, m_host, m_port);
     connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
     tracker->moveToThread(thread_tracker);
     thread_tracker->start();
@@ -262,31 +281,19 @@ Zeromq::Zeromq(QString a_host, QString a_port) : m_host(a_host), m_port(a_port)
 
 
 
-void Zeromq::dispatcher()
-{
-    QThread *thread_dispatch = new QThread;
-    dispatch_http = new Zdispatch(m_context, m_host, m_port);
-    connect(thread_dispatch, SIGNAL(started()), dispatch_http, SLOT(receive_payload()));
-    dispatch_http->moveToThread(thread_dispatch);
-    thread_dispatch->start();
-
-
-    QThread *thread_dispatch_xmpp = new QThread;
-    dispatch_xmpp = new Zdispatch(m_context, m_host, "5557");
-    connect(thread_dispatch_xmpp, SIGNAL(started()), dispatch_xmpp, SLOT(receive_payload()));
-    dispatch_xmpp->moveToThread(thread_dispatch_xmpp);
-    thread_dispatch_xmpp->start();
-}
-
-
 
 void Zeromq::payloader()
 {
+
     QThread *thread_payload = new QThread;
-    payload = new Zpayload(m_context, m_host, m_port);
-    connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+    //payload = new Zpayload(m_context, m_host, m_port);
+
+    payload = new Zpayload(m_context, m_host);
+    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     payload->moveToThread(thread_payload);
     thread_payload->start();
+
+    connect(tracker, SIGNAL(worker_port(QString)), payload, SLOT(receive_payload(QString)));
 }
 
 
