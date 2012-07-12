@@ -23,20 +23,36 @@ USE
 ===
 
 Launch a worker :
-./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=dispatcher
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="ls" --exec="ls"
 
-./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="ps" --exec="ps"
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="rm" --exec="rm"
+
 
 Launch a service :
-./ncw --memcached-ip=127.0.0.1 --memcached-port=11211 --mongodb-ip=127.0.0.1 --mongodb-base=nodecast_prod --memcached-keycache=production --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=service  --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=service  --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
 
 
 TEST API
 --------
 
-curl -H "X-nodename: dev1" --user "fredix@gmail.com:k5f2PheX" http://127.0.0.1:4567/node/create
+MONGODB
+create user collection
+doc = { login : 'user', email : 'user@email.com', authentication_token : 'token'}
+db.users.insert(doc);
 
-curl -H "X-task: ps" -H "X-node-uuid: d4bd950b-7a04-4ff3-bf73-f840947d1171" -H "X-node-password: 69df62ab-4084-4e22-b788-6803c80c9931" -H "X-payloadfilename: main.h" -X POST --data-binary @main.h --user "fredix@gmail.com:k5f2PheX" http://127.0.0.1:4567/payload/create
+1. create a node
+curl -H "X-nodename: your-node" --user "user@email.com:token" http://127.0.0.1:4567/node/create
+return node auth : {"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node_uuid":"2d0a7780-e8fe-4e0a-89c6-a5a2737b095a"}
+
+
+2. create a workflow
+curl -H "X-workflow: test" -d '{ "worker1": 1: "worker2": 2 }" --user "user@email.com:token" http://127.0.0.1:4567/workflow/create
+return a workflow : {"uuid":"0ebcdab6-0263-42d3-be7d-9602fa15f68c"}
+
+3. push data
+curl -H "X-node-uuid: 2d0a7780-e8fe-4e0a-89c6-a5a2737b095a" -H "X-node-password: 2d0a7780-e8fe-4e0a-89c6-a5a2737b095a" -H "X-workflow-uuid: 0ebcdab6-0263-42d3-be7d-9602fa15f68c" -H "X-payloadfilename: filename" -X POST --data-binary @filename http://127.0.0.1:4567/payload/create
+return a session uuid : {"uuid":"7b32b9d0-3ea9-4663-9577-4b34192055bf"}
+
 
 ../bin/mongodb/bin/mongofiles -d yourbase list
 
