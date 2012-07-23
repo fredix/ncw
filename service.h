@@ -35,11 +35,13 @@ class Service : public QObject
 public:
     Service(QObject *parent = 0);
     ~Service();
-    void init(QString child_exec, QString service_name);
+    void init(QString child_exec, QString a_service_name);
 
 private:
     QTimer *timer;
     QProcess *child_process;
+    QString m_child_exec;
+    QString m_service_name;
 
 private slots:
      void watchdog();

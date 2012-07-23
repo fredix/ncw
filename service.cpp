@@ -38,36 +38,34 @@ Service::~Service()
 }
 
 
-void Service::init(QString child_exec, QString service_name)
+void Service::init(QString child_exec, QString a_service_name)
 {
     QDateTime timestamp = QDateTime::currentDateTime();
 
-    bo tracker = BSON("type" << "service" << "name" << service_name.toStdString() << "command" << child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    m_child_exec = child_exec;
+    m_service_name = a_service_name;
+
+    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
     qDebug() << "!!!!   EXEC PROCESS : " << child_exec;
     //child_process->start("/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate");
-    child_process->start(child_exec);
+    child_process->start(m_child_exec);
     qDebug() << "PID : " << child_process->pid();
 }
 
 
 void Service::watchdog()
 {
+    if (child_process->state() == QProcess::NotRunning)
+    {
+        /*** child is dead, so we exit the worker */
+        qDebug() << "CHILD IS DEAD";
+        qApp->exit();
+    }
+
     QDateTime timestamp = QDateTime::currentDateTime();
 
-    if (child_process->pid() != 0)
-    {
-
-        bo tracker = BSON("type" << "service" << "action" << "watchdog" << "child_pid" << child_process->pid() << "timestamp" << timestamp.toTime_t());
-
-        emit return_tracker(tracker);
-    }
-    else {
-
-        bo tracker = BSON("type" << "service" << "action" << "watchdog" << "child_pid" << child_process->pid() << "timestamp" << timestamp.toTime_t());
-
-        emit return_tracker(tracker);
-        QCoreApplication::exit(1);
-    }
+    BSONObj tracker = BSON("type" << "service" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 }

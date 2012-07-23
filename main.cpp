@@ -101,6 +101,10 @@ void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
         zeromq->payloader();
         service = new Service();
         //this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+
+        this->connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        service->init(child_exec, worker_name);
+
         break;
 
     case WPROCESS:
@@ -108,26 +112,18 @@ void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
         zeromq->payloader();
         process = new Process();
         this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+
+        this->connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        process->init(child_exec, worker_name);
+
         break;
-
-
 
     default:
         qDebug() << "worker unknown : " << worker_type ;
         delete(this);
-        exit(1);
+        qApp->exit (1);
     }
 
-    if (process)
-    {
-        this->connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        process->init(child_exec, worker_name);
-    }
-    else if (service)
-    {
-        this->connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        service->init(child_exec, worker_name);
-    }
 
 }
 

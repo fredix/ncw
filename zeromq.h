@@ -76,6 +76,8 @@ public:
 
 private:
     zmq::context_t *m_context;
+    zmq::socket_t *m_receiver;
+
     QString m_host;
     QString m_port;
 

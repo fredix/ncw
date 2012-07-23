@@ -37,8 +37,8 @@ Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : 
 
     z_sender = new zmq::socket_t (*m_context, ZMQ_REQ);
 
-    uint64_t hwm = 5000;
-    zmq_setsockopt (z_sender, ZMQ_HWM, &hwm, sizeof (hwm));
+    uint64_t hwm = 50000;
+    z_sender->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
 }
 
 
@@ -81,6 +81,7 @@ void Ztracker::init()
 Ztracker::~Ztracker()
 {
     std::cout << "Ztracker::~Ztracker END\r\n" << std::endl;
+    z_sender->close();
 }
 
 
@@ -140,7 +141,10 @@ void Ztracker::push_tracker(bson::bo payload)
 
 
 Zpayload::~Zpayload()
-{}
+{
+    std::cout << "Zpayload::Zpayload destruct" << std::endl;
+    m_receiver->close();
+}
 
 
 Zpayload::Zpayload(zmq::context_t *a_context, QString a_host) : m_context(a_context), m_host(a_host)
@@ -156,21 +160,21 @@ void Zpayload::receive_payload(QString worker_port)
     qDebug() << "connection_string : " << connection_string;
 
     //  Socket to receive messages on
-    zmq::socket_t receiver(*m_context, ZMQ_PULL);
+    m_receiver = new zmq::socket_t(*m_context, ZMQ_PULL);
 
 
     uint64_t hwm = 50000;
-    zmq_setsockopt (receiver, ZMQ_HWM, &hwm, sizeof (hwm));
+    m_receiver->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
 
 
-    receiver.connect(connection_string.toAscii().data());
+    m_receiver->connect(connection_string.toAscii().data());
 
 
     //  Process tasks forever
     while (true) {
         qDebug() << "Zpayload WHILE : " << m_port;
         zmq::message_t message;
-        receiver.recv(&message);
+        m_receiver->recv(&message);
 
         //std::cout << "Received request: [" << (char*) message.data() << "]" << std::endl;
 
@@ -190,7 +194,9 @@ Zdispatch::Zdispatch()
 {}
 
 Zdispatch::~Zdispatch()
-{}
+{
+    z_sender->close();
+}
 
 
 Zdispatch::Zdispatch(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context)
@@ -203,9 +209,7 @@ Zdispatch::Zdispatch(zmq::context_t *a_context, QString a_host, QString a_port) 
     z_sender = new zmq::socket_t(*m_context, ZMQ_PUSH);
 
     uint64_t hwm = 50000;
-    zmq_setsockopt (z_sender, ZMQ_HWM, &hwm, sizeof (hwm));
-
-
+    z_sender->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
     z_sender->connect("tcp://*:5559");
 }
 
@@ -328,6 +332,11 @@ void Zeromq::handleSigHup()
 
     // do Qt stuff
     std::cout << "Received SIGHUP" << std::endl;
+
+    delete(tracker);
+    delete(payload);
+    delete(m_context);
+
     snHup->setEnabled(true);
     qApp->exit();
 }

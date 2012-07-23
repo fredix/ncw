@@ -46,7 +46,7 @@ return node auth : {"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node
 
 
 2. create a workflow
-curl -H "X-workflow: test" -d '{ "worker1": 1: "worker2": 2 }" --user "user@email.com:token" http://127.0.0.1:4567/workflow/create
+curl -H "X-workflow: test" -d '{ "ls": 1, "rm": 2 }' --user "user@email.com:token" http://127.0.0.1:4567/workflow/create
 return a workflow : {"uuid":"0ebcdab6-0263-42d3-be7d-9602fa15f68c"}
 
 3. push data
