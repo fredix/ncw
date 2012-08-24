@@ -25,6 +25,178 @@
 int Zeromq::sighupFd[2]={};
 int Zeromq::sigtermFd[2]={};
 
+
+
+Zstream::Zstream(zmq::context_t *a_context, QString a_host) : m_context(a_context), m_host(a_host)
+{
+    m_mutex = new QMutex();
+
+    // Prepare our context and socket
+    z_message = new zmq::message_t(2);
+    z_receive = new zmq::socket_t (*m_context, ZMQ_REQ);
+
+    uint64_t hwm = 50000;
+    z_receive->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+
+
+    std::cout << "Connecting to the ncs stream" << std::endl;
+
+    QString connection_string = "tcp://" + m_host + ":5556";
+    z_receive->connect (connection_string.toAscii().data());
+
+
+    int socket_stream_fd;
+    size_t socket_size;
+    z_receive->getsockopt(ZMQ_FD, &socket_stream_fd, &socket_size);
+
+    qDebug() << "RES getsockopt : " << "res" <<  " FD : " << socket_stream_fd << " errno : " << zmq_strerror (errno);
+
+    check_stream = new QSocketNotifier(socket_stream_fd, QSocketNotifier::Read, this);
+    connect(check_stream, SIGNAL(activated(int)), this, SLOT(stream_payload()), Qt::DirectConnection);
+
+    //data_stream = new QFile("/tmp/nodecast/data_stream");
+    //data_stream->open(QIODevice::WriteOnly);
+}
+
+
+Zstream::~Zstream()
+{
+    std::cout << "Zstream::~Zstream END\r\n" << std::endl;
+    z_receive->close();
+}
+
+
+void Zstream::get_stream(BSONObj payload)
+{
+    //m_mutex->lock ();
+    std::cout << "Zstream::send_payload : " << payload << std::endl;
+
+    /*BSONObj l_payload;
+
+    l_payload = BSON("payload" << payload << "uuid" << m_uuid.toStdString());
+    std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
+    */
+
+    z_message->rebuild(payload.objsize());
+    memcpy(z_message->data(), (char*)payload.objdata(), payload.objsize());
+    z_receive->send(*z_message);
+
+    /* Get the reply.
+    zmq::message_t reply;
+    z_stream->recv (&reply);
+    std::cout << "Received stream response : " << (char*) reply.data() << std::endl;*/
+}
+
+
+void Zstream::stream_payload()
+{
+    check_stream->setEnabled(false);
+
+    std::cout << "Zstream::stream_payload" << std::endl;
+
+    qint32 events = 0;
+    std::size_t eventsSize = sizeof(events);
+    z_receive->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
+
+
+
+    if (events & ZMQ_POLLIN)
+    {
+        std::cout << "Zstream::stream_payload ZMQ_POLLIN" <<  std::endl;
+
+        QFile dstream("/tmp/nodecast/data_stream");
+        dstream.open(QIODevice::WriteOnly);
+
+        QDataStream out(&dstream);
+
+
+        while (true) {
+            zmq::message_t request;
+
+            bool res = z_receive->recv (&request, ZMQ_NOBLOCK);
+
+            qint32 l_events = 0;
+            std::size_t l_eventsSize = sizeof(events);
+            z_receive->getsockopt(ZMQ_EVENTS, &l_events, &l_eventsSize);
+
+            if (!(l_events & ZMQ_RCVMORE)) break;
+
+
+            const char * data = (char*) request.data();
+
+            std::cout << "Zstream::stream_payload received request: [" << data << "]" << std::endl;
+
+
+  /*          char *plop = (char*) request.data();
+            if (strlen(plop) == 0) {
+                std::cout << "Zstream::stream_payload STRLEN received request 0" << std::endl;
+                break;
+            }
+*/
+
+            //QTextStream out(data_stream);
+            out << data;
+
+            //std::cout << "RECEIVE DATA : " << request.data() << std::endl;
+
+
+            /*
+            BSONObj l_payload;
+            try {
+                l_payload = bo((char*)request.data());
+                std::cout << "Zstream Received payload : " << l_payload << std::endl;
+            }
+            catch (mongo::MsgAssertionException &e)
+            {
+                std::cout << "error on data : " << l_payload << std::endl;
+                std::cout << "error on data BSON : " << e.what() << std::endl;
+                break;
+            }
+            */
+
+            /*
+            QString payload_action = QString::fromStdString(l_payload.getFieldDotted("payload.action").str());
+
+            if (payload_action == "get_file")
+            {
+
+                BSONObj session_uuid = BSON("uuid" << l_payload.getField("session_uuid").str());
+
+                BSONObj session = nosql_->Find("sessions", session_uuid);
+
+                std::cout << "!!!!! session !!!!!! : " << session << std::endl;
+
+                BSONObj payload_id = BSON("_id" << session.getField("payload_id").OID());
+                std::cout << "payload_id : " << payload_id << std::endl;
+
+                BSONObj payload = nosql_->Find("payloads", payload_id);
+
+
+
+
+
+
+                BSONObjBuilder b_payload;
+                b_payload.append(l_payload.getField("session_uuid"));
+                b_payload << "file_path" << "/tmp/nodecast/dump_gridfile";
+                BSONObj r_payload = b_payload.obj();
+
+
+                z_message->rebuild(r_payload.objsize());
+                memcpy(z_message->data(), (char*)r_payload.objdata(), r_payload.objsize());
+                z_stream->send(*z_message);
+            }*/
+
+        }
+        //out << "\n";
+        dstream.close ();
+        qDebug() << "BREAK ZEROMQ RECV";;
+    }
+
+    check_stream->setEnabled(true);
+    //m_mutex->unlock ();
+}
+
 Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context)
 {
     m_mutex = new QMutex();
@@ -89,7 +261,7 @@ Ztracker::~Ztracker()
 void Ztracker::push_tracker(bson::bo payload)
 {
     m_mutex->lock();
-    std::cout << "Ztracker::push_tracker\r\n" << std::endl;
+    std::cout << "Ztracker::push_tracker" << std::endl;
     std::cout << "TRACKER : " << payload << std::endl;
 
     bo l_payload;
@@ -128,7 +300,7 @@ void Ztracker::push_tracker(bson::bo payload)
         m_uuid = QString::fromStdString(r_payload["uuid"].str());
         m_worker_port = QString::number(r_payload["port"].numberInt());
 
-        emit worker_port(m_worker_port);
+        emit worker_port(m_worker_port, m_uuid);
     }
     else
     {
@@ -147,30 +319,144 @@ Zpayload::~Zpayload()
 }
 
 
-Zpayload::Zpayload(zmq::context_t *a_context, QString a_host) : m_context(a_context), m_host(a_host)
+Zpayload::Zpayload(zmq::context_t *a_context, QString a_host, QString a_worker_name) : m_context(a_context), m_host(a_host), m_worker_name(a_worker_name)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
+
+    QString connection_string = "tcp://" + m_host + ":5555";
+    QString connection_pubsub_string = "tcp://" + m_host + ":5557";
+
+    m_socket_worker = new zmq::socket_t (*m_context, ZMQ_PUSH);
+    uint64_t hwm = 50000;
+    m_socket_worker->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    m_socket_worker->connect(connection_string.toAscii());
+
+
+    /************ PUBSUB SOCKET ***************/
+    const char *filter = m_worker_name.toAscii();
+    m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
+    m_socket_pubsub->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter, strlen (filter));
+    m_socket_pubsub->connect(connection_pubsub_string.toAscii());
+    /******************************************/
+
+
+    int pubsub_payload_socket_fd;
+    size_t socket_size;
+    m_socket_pubsub->getsockopt(ZMQ_FD, &pubsub_payload_socket_fd, &socket_size);
+
+    qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
+
+    check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
+    connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()));
 }
 
-void Zpayload::receive_payload(QString worker_port)
+void Zpayload::pubsub_payload()
+{
+    check_pubsub_payload->setEnabled(false);
+
+    qDebug() << "Zpayload::pubsub_payload";
+
+    qint32 events = 0;
+    std::size_t eventsSize = sizeof(events);
+    m_socket_pubsub->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
+
+    if (events & ZMQ_POLLIN)
+    {
+        std::cout << "Zpayload::pubsub_payload ZMQ_POLLIN" <<  std::endl;
+
+
+        while (true) {
+            zmq::message_t request;
+
+            bool res = m_socket_pubsub->recv (&request, ZMQ_NOBLOCK);
+            if (res == -1 && zmq_errno () == EAGAIN) break;
+
+            std::cout << "Zpayload::pubsub_payload data : " <<  (char*)request.data() <<  std::endl;
+
+
+            char *plop = (char*) request.data();
+            if (strlen(plop) == 0) {
+                std::cout << "Zpayload::pubsub_payload STRLEN received request 0" << std::endl;
+                break;
+            }
+
+
+            QString raw_data = QString::fromAscii(plop);
+
+            raw_data.remove(m_worker_name + " ");
+            qDebug() << "RAW DATA : " << raw_data;
+
+
+
+            emit emit_pubsub(raw_data.toStdString());
+
+            /*
+            BSONObj data;
+            try {
+                //data = BSONObj((char*) request.data());
+                //data = mongo::fromjson(raw_data.toAscii());
+
+                if (data.isValid() && !data.isEmpty())
+                {
+                    std::cout << "Zpayload::pubsub_payload received : " << res << " data : " << data  << std::endl;
+
+                    std::cout << "!!!!!!! BEFORE FORWARD PAYLOAD !!!!" << std::endl;
+                    emit emit_pubsub(data.copy());
+                    std::cout << "!!!!!!! AFTER FORWARD PAYLOAD !!!!" << std::endl;
+                }
+                else
+                {
+                    std::cout << "DATA NO VALID !" << std::endl;
+                    break;
+                }
+
+            }
+            catch (mongo::MsgAssertionException &e)
+            {
+                std::cout << "error on data : " << data << std::endl;
+                std::cout << "error on data BSON : " << e.what() << std::endl;
+                break;
+            }
+            */
+        }
+    }
+
+    check_pubsub_payload->setEnabled(true);
+}
+
+
+void Zpayload::init_payload(QString worker_port, QString worker_uuid)
 {
     //QString connection_string = "tcp://" + m_host + ":" + m_port;
     QString connection_string = "tcp://" + m_host + ":" + worker_port;
 
+    m_uuid = worker_uuid;
+
     qDebug() << "connection_string : " << connection_string;
+    m_message = new zmq::message_t(2);
 
-    //  Socket to receive messages on
     m_receiver = new zmq::socket_t(*m_context, ZMQ_PULL);
-
-
     uint64_t hwm = 50000;
-    m_receiver->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    m_receiver->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));    
+    //m_receiver->setsockopt(ZMQ_IDENTITY, worker_uuid.toStdString(),  worker_uuid.toStdString().size());
+
 
 
     m_receiver->connect(connection_string.toAscii().data());
 
+    int payload_socket_fd;
+    size_t socket_size;
+    m_receiver->getsockopt(ZMQ_FD, &payload_socket_fd, &socket_size);
 
-    //  Process tasks forever
+    qDebug() << "RES getsockopt : " << "res" <<  " FD : " << payload_socket_fd << " errno : " << zmq_strerror (errno);
+
+    check_receive_payload = new QSocketNotifier(payload_socket_fd, QSocketNotifier::Read, this);
+    connect(check_receive_payload, SIGNAL(activated(int)), this, SLOT(receive_payload()));
+
+
+
+    /*  Process tasks forever
     while (true) {
         qDebug() << "Zpayload WHILE : " << m_port;
         zmq::message_t message;
@@ -181,75 +467,91 @@ void Zpayload::receive_payload(QString worker_port)
         bo l_payload = bo((char*)message.data());
 
         emit payload(l_payload);
-    }
+    }*/
 
 }
 
 
-
-
-
-
-Zdispatch::Zdispatch()
-{}
-
-Zdispatch::~Zdispatch()
+void Zpayload::push_payload(BSONObj data)
 {
-    z_sender->close();
-}
-
-
-Zdispatch::Zdispatch(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context)
-{
-    std::cout << "Zdispatch::Zdispatch constructeur" << std::endl;
-    m_host = a_host;
-    m_port = a_port;
-
-    z_message = new zmq::message_t(2);
-    z_sender = new zmq::socket_t(*m_context, ZMQ_PUSH);
-
-    uint64_t hwm = 50000;
-    z_sender->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
-    z_sender->connect("tcp://*:5559");
-}
-
-void Zdispatch::receive_payload()
-{
-    QString connection_string = "tcp://" + m_host + ":" + m_port;
-
-    qDebug() << "connection_string : " << connection_string;
-
-    //  Socket to receive messages on
-    zmq::socket_t receiver(*m_context, ZMQ_PULL);
-    receiver.connect(connection_string.toAscii().data());
-
-
-    //  Process tasks forever
-    while (true) {
-        qDebug() << "ZDISPTACH WHILE : " << m_port;
-        zmq::message_t message;
-        receiver.recv(&message);
-
-        //std::cout << "Received request: [" << (char*) message.data() << "]" << std::endl;
-
-        bo l_payload = bo((char*)message.data());
-
-        emit payload(l_payload);
-    }
-
-}
-
-
-void Zdispatch::push_payload(bson::bo payload)
-{    
     /****** PUSH API PAYLOAD *******/
-    qDebug() << "return Zdispatch::return_payload";
-    z_message->rebuild(payload.objsize());
-    memcpy(z_message->data(), (char*)payload.objdata(), payload.objsize());
-    //z_sender->send(*z_message, ZMQ_NOBLOCK);
-    z_sender->send(*z_message);
+    std::cout << "Zpayload:: PUSH PAYLOAD : " <<  data << std::endl;
+
+    BSONObj l_payload = BSON("payload" << data << "uuid" << m_uuid.toStdString());
+
+    std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
+
+
+    m_message->rebuild(l_payload.objsize());
+    memcpy(m_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
+    m_socket_worker->send(*m_message);
     /************************/
 }
+
+void Zpayload::receive_payload()
+{
+    check_receive_payload->setEnabled(false);
+
+    std::cout << "Zpayload::receive_payload" << std::endl;
+
+    qint32 events = 0;
+    std::size_t eventsSize = sizeof(events);
+
+    m_receiver->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
+
+    std::cout << "Zpayload::receive_payload ZMQ_EVENTS : " <<  events << std::endl;
+
+
+    if (events & ZMQ_POLLIN)
+    {
+        std::cout << "Zpayload::receive_payload ZMQ_POLLIN" <<  std::endl;
+
+        while (true)
+        {
+            zmq::message_t request;
+            bool res = m_receiver->recv(&request, ZMQ_NOBLOCK);
+            if (!res && zmq_errno () == EAGAIN) break;
+
+            std::cout << "Zpayload::receive_payload received request: [" << (char*) request.data() << "]" << std::endl;
+
+            char *plop = (char*) request.data();
+            if (strlen(plop) == 0) {
+                std::cout << "Zpayload::worker_response STRLEN received request 0" << std::endl;
+                break;
+            }
+
+
+            BSONObj data;
+            try {
+                data = BSONObj((char*)request.data());
+
+                if (data.isValid() && !data.isEmpty())
+                {
+                    std::cout << "Zpayload received : " << res << " data : " << data  << std::endl;
+
+                    std::cout << "!!!!!!! BEFORE FORWARD PAYLOAD !!!!" << std::endl;
+                    emit payload(data.copy());
+                    std::cout << "!!!!!!! AFTER FORWARD PAYLOAD !!!!" << std::endl;
+                }
+                else
+                {
+                    std::cout << "DATA NO VALID !" << std::endl;
+                }
+
+            }
+            catch (mongo::MsgAssertionException &e)
+            {
+                std::cout << "error on data : " << data << std::endl;
+                std::cout << "error on data BSON : " << e.what() << std::endl;
+                break;
+            }
+        }
+
+    }
+
+    check_receive_payload->setEnabled(true);
+}
+
 
 
 Zeromq::~Zeromq()
@@ -258,7 +560,7 @@ Zeromq::~Zeromq()
 }
 
 
-Zeromq::Zeromq(QString a_host, QString a_port) : m_host(a_host), m_port(a_port)
+Zeromq::Zeromq(QString a_host, QString a_port, QString a_worker_name) : m_host(a_host), m_port(a_port), m_worker_name(a_worker_name)
 {
     qDebug() << "Zeromq::construct";
 
@@ -281,6 +583,34 @@ Zeromq::Zeromq(QString a_host, QString a_port) : m_host(a_host), m_port(a_port)
     connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
     tracker->moveToThread(thread_tracker);
     thread_tracker->start();
+
+
+
+    /*********** PAYLOAD ***********/
+    QThread *thread_payload = new QThread;
+    //payload = new Zpayload(m_context, m_host, m_port);
+
+    payload = new Zpayload(m_context, m_host, m_worker_name);
+    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+    payload->moveToThread(thread_payload);
+    thread_payload->start();
+    connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
+    /*********** PAYLOAD ***********/
+
+
+
+
+    /*********** STREAM ***********/
+    QThread *thread_stream = new QThread;
+    //payload = new Zpayload(m_context, m_host, m_port);
+
+    stream = new Zstream(m_context, m_host);
+    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+    stream->moveToThread(thread_stream);
+    thread_stream->start();
+    //connect(tracker, SIGNAL(worker_port(QString, QString)), stream, SLOT(init_payload(QString, QString)));
+    /*********** STREAM ***********/
+
 }
 
 
@@ -292,12 +622,12 @@ void Zeromq::payloader()
     QThread *thread_payload = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    payload = new Zpayload(m_context, m_host);
+    payload = new Zpayload(m_context, m_host, m_worker_name);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     payload->moveToThread(thread_payload);
     thread_payload->start();
 
-    connect(tracker, SIGNAL(worker_port(QString)), payload, SLOT(receive_payload(QString)));
+    connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
 }
 
 

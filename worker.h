@@ -22,13 +22,16 @@
 #ifndef WORKER_H
 #define WORKER_H
 
+#include "client/dbclient.h"
+#include "bson/bson.h"
+
 #include <QDebug>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QProcess>
 #include <QTimer>
+#include <QMutex>
 
-#include "bson/bson.h"
 
 using namespace mongo;
 using namespace bson;
@@ -44,18 +47,20 @@ public:
     virtual void init(QString child_exec);
 
 
-private slots:
-     virtual void watchdog()=0;
-     virtual void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
+private slots:    
+    virtual void watchdog()=0;
+    virtual void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
+    virtual void readyReadStandardOutput();
 
 
 signals:
-    virtual void return_payload(bson::bo data);
+    virtual void push_payload(bson::bo data);
     virtual void return_tracker(bson::bo data);
+    virtual void get_stream(bson::bo data);
 
-
-public slots:
-     virtual void s_job_receive(bson::bo data)=0;
+public slots:     
+    virtual void s_job_receive(bson::bo data)=0;
+    virtual void get_pubsub(string data);
 };
 
 #endif // WORKER_H

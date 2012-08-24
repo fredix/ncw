@@ -37,11 +37,20 @@ void Worker::init(QString child_exec)
 void Worker::watchdog()
 {}
 
+
+void Worker::readyReadStandardOutput()
+{}
+
 void Worker::s_job_receive(bson::bo data)
 {
     qDebug() << "Worker::s_mother_job_receive";
 }
 
+
+void Worker::get_pubsub(string data)
+{
+    qDebug() << "Worker::mother_get_pubsub";
+}
 
 
 void Worker::process_finished(int exitCode, QProcess::ExitStatus exitStatus)

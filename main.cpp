@@ -98,24 +98,26 @@ void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
     {   
     case WSERVICE:
         qDebug() << "WSERVICE : " << worker_type ;
-        zeromq->payloader();
+        //zeromq->payloader();
         service = new Service();
-        //this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), worker, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        connect(zeromq->payload, SIGNAL(payload(bson::bo)), service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+        connect(zeromq->payload, SIGNAL(emit_pubsub(string)), service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
 
-        this->connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
         service->init(child_exec, worker_name);
-
+        connect(service, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
+        connect(service, SIGNAL(get_stream(bson::bo)), zeromq->stream, SLOT(get_stream(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WPROCESS:
         qDebug() << "WPROCESS : " << worker_type ;
-        zeromq->payloader();
+        //zeromq->payloader();
         process = new Process();
-        this->connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
+        connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
 
-        this->connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
+        connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
         process->init(child_exec, worker_name);
-
+        connect(process, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
         break;
 
     default:
@@ -229,7 +231,7 @@ int main(int argc, char *argv[])
     Zworker *zworker = new Zworker;
 
 
-    zworker->zeromq = new Zeromq(ncs_ip, ncs_port);
+    zworker->zeromq = new Zeromq(ncs_ip, ncs_port, worker_name);
     zworker->Init(worker_type, worker_name, child_exec);
 
 

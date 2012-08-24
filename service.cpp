@@ -20,11 +20,12 @@
 
 #include "service.h"
 
-Service::Service(QObject *parent) : QObject(parent)
+Service::Service() : Worker()
 {
     qDebug() << "Service::Service constructer";
     child_process = new QProcess();
 
+    m_mutex = new QMutex;
 
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
@@ -49,8 +50,11 @@ void Service::init(QString child_exec, QString a_service_name)
     emit return_tracker(tracker);
 
     qDebug() << "!!!!   EXEC PROCESS : " << child_exec;
-    //child_process->start("/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate");
     child_process->start(m_child_exec);
+
+    connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
+
+
     qDebug() << "PID : " << child_process->pid();
 }
 
@@ -68,4 +72,130 @@ void Service::watchdog()
 
     BSONObj tracker = BSON("type" << "service" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
+}
+
+
+//void Service::get_pubsub(bson::bo data)
+void Service::get_pubsub(string data)
+{
+    std::cout << "Service::get_pubsub data : " << data << std::endl;
+
+
+    //child_process->write(data.toString().data());
+    child_process->write(data.c_str());
+    child_process->write("\n");
+    //child_process->waitForBytesWritten(100000);
+}
+
+
+void Service::s_job_receive(bson::bo data) {
+
+    qDebug() << "Service::s_job_receive";
+    //m_mutex->lock();
+
+    BSONElement r_datas = data.getField("datas");
+    BSONElement session_uuid = data.getField("session_uuid");
+    m_session_uuid = QString::fromStdString(session_uuid.str());
+    //data.getField("step_id").Obj().getObjectID(step_id);
+
+    std::cout << "BE SESSION UUID " << session_uuid << std::endl;
+    std::cout << "QS SESSION UUID " << m_session_uuid.toStdString() << std::endl;
+    //be step_id;
+    //data.getObjectID (step_id);
+
+    std::cout << "RECEIVE MESSAGE : " << data << std::endl;
+
+
+    QString param;
+
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    BSONObjBuilder b_tracker;
+    b_tracker << "type" << "service";
+    b_tracker.append(session_uuid);
+    b_tracker << "name" << m_service_name.toStdString() << "action" << "receive" << "timestamp" << timestamp.toTime_t();
+
+    BSONObj tracker = b_tracker.obj();
+    emit push_payload(tracker);
+
+    param.append(" ").append(QString::fromStdString(r_datas.str()));
+
+
+    QByteArray q_datas = r_datas.valuestr();
+    qDebug() << "!!!!   SEND PAYLOAD TO STDIN : " << q_datas;
+
+    child_process->write(q_datas);
+    child_process->write("\n");
+    //child_process->waitForBytesWritten(100000);
+}
+
+
+
+void Service::readyReadStandardOutput()
+{
+    QByteArray service_stdout = child_process->readAllStandardOutput();
+    QString json = service_stdout;
+    std::cout << "STDOUT : " << json.toStdString() << std::endl;
+
+
+
+    std::cout << "m_session_uuid : " << m_session_uuid.toStdString() << std::endl;
+
+    BSONObjBuilder b_datas;
+    BSONObj b_out;
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    try {
+        b_out = mongo::fromjson(json.toAscii());
+        std::cout << "b_out : " << b_out << std::endl;
+
+        if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0
+                                      || b_out.getField("action").str().compare("publish") == 0))
+        {
+            qDebug() << "WORKER SERVICE BEFORE CREATE PAYLOAD EMIT";
+            emit push_payload(b_out);
+            qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
+            return;
+        }
+        else if (b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
+        {
+            qDebug() << "WORKER SERVICE BEFORE GET FILE PAYLOAD EMIT";
+
+            b_datas << "type" << "service";
+            b_datas << "session_uuid" << m_session_uuid.toStdString();
+            b_datas << "name" << m_service_name.toStdString() << "action" << "get_file" << "timestamp" << timestamp.toTime_t();
+
+            BSONObj s_datas = b_datas.obj();
+            std::cout << "s_datas : " << s_datas << std::endl;
+
+            qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD BEFORE EMIT";
+
+            emit get_stream(s_datas);
+            qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
+            return;
+        }
+        else
+        {
+            b_datas << "type" << "service";
+            b_datas << "session_uuid" << m_session_uuid.toStdString();
+            b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << b_out;
+        }
+    }
+    catch (mongo::MsgAssertionException &e)
+    {
+        std::cout << "m_session_uuid : " << m_session_uuid.toStdString() << std::endl;
+        std::cout << "m_service_name : " << m_service_name.toStdString() << std::endl;
+        std::cout << "error on parsing JSON : " << e.what() << std::endl;
+        b_datas << "type" << "service";
+        b_datas << "session_uuid" << m_session_uuid.toStdString();
+        b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
+    }
+
+    BSONObj s_datas = b_datas.obj();
+    std::cout << "s_datas : " << s_datas << std::endl;
+
+    qDebug() << "WORKER PROCESS BEFORE EMIT";
+    emit push_payload(s_datas);
+    qDebug() << "WORKER PROCESS AFTER EMIT";
+    //m_mutex->unlock();
 }

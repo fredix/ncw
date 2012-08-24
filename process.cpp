@@ -79,8 +79,14 @@ void Process::s_job_receive(bson::bo data) {
     QString param;
 
     QDateTime timestamp = QDateTime::currentDateTime();
-    BSONObj tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "receive" << "timestamp" << timestamp.toTime_t());
-    emit return_tracker(tracker);
+
+    BSONObjBuilder b_tracker;
+    b_tracker << "type" << "worker";
+    b_tracker.append(session_uuid);
+    b_tracker << "name" << m_process_name.toStdString() << "action" << "receive" << "timestamp" << timestamp.toTime_t();
+
+    BSONObj tracker = b_tracker.obj();
+    emit push_payload(tracker.copy());
 
     param.append(" ").append(QString::fromStdString(r_datas.str()));
 
@@ -88,10 +94,9 @@ void Process::s_job_receive(bson::bo data) {
     process->start(m_child_exec + param);
     process->waitForFinished(-1);
 
-
     timestamp = QDateTime::currentDateTime();
-    tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
-    emit return_tracker(tracker);
+    //tracker = BSON("type" << "worker" << "action" << "payload" << "status" << "send" << "timestamp" << timestamp.toTime_t());
+    //emit return_tracker(tracker);
 
     BSONObjBuilder b_datas;
     b_datas << "type" << "worker";
@@ -104,7 +109,7 @@ void Process::s_job_receive(bson::bo data) {
     std::cout << "s_datas : " << s_datas << std::endl;
 
     qDebug() << "WORKER PROCESS BEFORE EMIT";
-    emit return_tracker(s_datas);
+    emit push_payload(s_datas.copy());
     qDebug() << "WORKER PROCESS AFTER EMIT";
 }
 

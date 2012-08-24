@@ -21,33 +21,31 @@
 #ifndef SERVICE_H
 #define SERVICE_H
 
-
-#include <QCoreApplication>
-#include <QDateTime>
-#include <QProcess>
-#include <QTimer>
 #include "worker.h"
 
 
-class Service : public QObject
-{
-    Q_OBJECT
+class Service : public Worker
+{    
 public:
-    Service(QObject *parent = 0);
+    Service();
     ~Service();
     void init(QString child_exec, QString a_service_name);
 
 private:
+    QMutex *m_mutex;
     QTimer *timer;
     QProcess *child_process;
     QString m_child_exec;
     QString m_service_name;
+    QString m_session_uuid;
 
 private slots:
      void watchdog();
+     void readyReadStandardOutput();
 
-signals:
-    void return_tracker(bson::bo data);
+public slots:
+    void s_job_receive(bson::bo data);
+    void get_pubsub(string data);
 };
 
 #endif // SERVICE_H
