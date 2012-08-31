@@ -92,6 +92,7 @@ void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
 
     qDebug() << worker_type;
     qRegisterMetaType<bson::bo>("bson::bo");
+    qRegisterMetaType<string>("string");
 
 
     switch (enumToWorker[worker_type])

@@ -135,9 +135,9 @@ void Service::readyReadStandardOutput()
 {
     QByteArray service_stdout = child_process->readAllStandardOutput();
     QString json = service_stdout;
+    json = json.simplified();
+
     std::cout << "STDOUT : " << json.toStdString() << std::endl;
-
-
 
     std::cout << "m_session_uuid : " << m_session_uuid.toStdString() << std::endl;
 
