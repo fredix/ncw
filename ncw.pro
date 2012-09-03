@@ -25,7 +25,7 @@ LIBS += /usr/local/lib/libmongoclient.a \
 
 INCLUDEPATH += ./externals/libqxt/
 INCLUDEPATH += ./externals/libqxt/core
-INCLUDEPATH += ./externals/mongodb
+INCLUDEPATH += ./externals/mongodb/src
 
 HEADERS += main.h \
     zeromq.h \
