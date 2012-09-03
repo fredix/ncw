@@ -33,8 +33,8 @@
 #include <boost/asio.hpp>
 #include <zmq.hpp>
 
-#include "client/dbclient.h"
-#include "bson/bson.h"
+#include "mongo/client/dbclient.h"
+#include "mongo/bson/bson.h"
 
 using namespace mongo;
 using namespace bson;

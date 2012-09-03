@@ -22,8 +22,8 @@
 #ifndef WORKER_H
 #define WORKER_H
 
-#include "client/dbclient.h"
-#include "bson/bson.h"
+#include "mongo/client/dbclient.h"
+#include "mongo/bson/bson.h"
 
 #include <QDebug>
 #include <QCoreApplication>
