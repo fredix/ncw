@@ -46,7 +46,7 @@ Zstream::Zstream(zmq::context_t *a_context, QString a_host) : m_context(a_contex
 
 
     int socket_stream_fd;
-    size_t socket_size;
+    size_t socket_size = sizeof(socket_stream_fd);
     z_receive->getsockopt(ZMQ_FD, &socket_stream_fd, &socket_size);
 
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << socket_stream_fd << " errno : " << zmq_strerror (errno);
@@ -342,7 +342,7 @@ Zpayload::Zpayload(zmq::context_t *a_context, QString a_host, QString a_worker_n
 
 
     int pubsub_payload_socket_fd;
-    size_t socket_size;
+    size_t socket_size = sizeof(pubsub_payload_socket_fd);
     m_socket_pubsub->getsockopt(ZMQ_FD, &pubsub_payload_socket_fd, &socket_size);
 
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
@@ -442,11 +442,13 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     //m_receiver->setsockopt(ZMQ_IDENTITY, worker_uuid.toStdString(),  worker_uuid.toStdString().size());
 
 
+    QByteArray t_connection_string = connection_string.toAscii();
 
-    m_receiver->connect(connection_string.toAscii().data());
+    m_receiver->connect(t_connection_string.constData());
+    std::cout << "receiver connect error : " << zmq_strerror (errno) << std::endl;
 
     int payload_socket_fd;
-    size_t socket_size;
+    size_t socket_size = sizeof(payload_socket_fd);
     m_receiver->getsockopt(ZMQ_FD, &payload_socket_fd, &socket_size);
 
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << payload_socket_fd << " errno : " << zmq_strerror (errno);
