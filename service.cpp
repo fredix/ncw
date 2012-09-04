@@ -157,7 +157,7 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
             return;
         }
-        else if (b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
+        else if (!m_session_uuid.isEmpty() && b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
         {
             qDebug() << "WORKER SERVICE BEFORE GET FILE PAYLOAD EMIT";
 
@@ -174,11 +174,12 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
             return;
         }
-        else
+        else if (!m_session_uuid.isEmpty())
         {
             b_datas << "type" << "service";
             b_datas << "session_uuid" << m_session_uuid.toStdString();
             b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << b_out;
+
         }
     }
     catch (mongo::MsgAssertionException &e)
@@ -186,16 +187,24 @@ void Service::readyReadStandardOutput()
         std::cout << "m_session_uuid : " << m_session_uuid.toStdString() << std::endl;
         std::cout << "m_service_name : " << m_service_name.toStdString() << std::endl;
         std::cout << "error on parsing JSON : " << e.what() << std::endl;
-        b_datas << "type" << "service";
-        b_datas << "session_uuid" << m_session_uuid.toStdString();
-        b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
+            if (!m_session_uuid.isEmpty())
+            {
+                b_datas << "type" << "service";
+                b_datas << "session_uuid" << m_session_uuid.toStdString();
+                b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
+            }
     }
+
 
     BSONObj s_datas = b_datas.obj();
     std::cout << "s_datas : " << s_datas << std::endl;
 
-    qDebug() << "WORKER PROCESS BEFORE EMIT";
-    emit push_payload(s_datas);
-    qDebug() << "WORKER PROCESS AFTER EMIT";
+    if (s_datas.isValid() && s_datas.objsize() > 0)
+    {
+        qDebug() << "WORKER PROCESS BEFORE EMIT";
+        emit push_payload(s_datas);
+        qDebug() << "WORKER PROCESS AFTER EMIT";
+    }
+
     //m_mutex->unlock();
 }
