@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -18,37 +18,20 @@
 **   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-#ifndef SERVICE_H
-#define SERVICE_H
-
-#include "worker.h"
+#ifndef NCW_GLOBAL_H
+#define NCW_GLOBAL_H
 
 
-class Service : public Worker
-{    
-public:
-    Service();
-    ~Service();
-    //void init(QString child_exec, QString a_service_name);
-    void init(ncw_params ncw);
 
-private:
-    QMutex *m_mutex;
-    QTimer *timer;
-    QProcess *child_process;
-    QString m_child_exec;
-    QString m_service_name;
-    QString m_session_uuid;
-    QString m_node_uuid;
-    QString m_node_password;
-
-private slots:
-     void watchdog();
-     void readyReadStandardOutput();
-
-public slots:
-    void s_job_receive(bson::bo data);
-    void get_pubsub(string data);
+struct ncw_params {
+    QString ncs_ip;
+    QString ncs_port;
+    QString worker_name;
+    QString worker_type;
+    QString node_uuid;
+    QString node_password;
+    QString child_exec;
 };
 
-#endif // SERVICE_H
+
+#endif // NCW_GLOBAL_H

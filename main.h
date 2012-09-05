@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2011  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -29,10 +29,11 @@
 //#include <QDomDocument>
 #include <QxtCore/QxtCommandOptions>
 
-
 #include "zeromq.h"
 #include "service.h"
 #include "process.h"
+#include "ncw_global.h"
+
 
 
 enum WorkerType {
@@ -50,7 +51,8 @@ class Zworker : public QObject
 public:
     Zworker();
     ~Zworker();
-    void Init(QString worker_type, QString worker_name, QString child_exec);
+    //void Init(QString worker_type, QString worker_name, QString child_exec);
+    void Init(ncw_params ncw);
     Zeromq *zeromq;
     Worker *worker;
     Process *process;

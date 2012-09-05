@@ -31,7 +31,7 @@
 #include <QProcess>
 #include <QTimer>
 #include <QMutex>
-
+#include "ncw_global.h"
 
 using namespace mongo;
 using namespace bson;

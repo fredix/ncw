@@ -39,17 +39,20 @@ Service::~Service()
 }
 
 
-void Service::init(QString child_exec, QString a_service_name)
+//void Service::init(QString child_exec, QString a_service_name)
+void Service::init(ncw_params ncw)
 {
     QDateTime timestamp = QDateTime::currentDateTime();
 
-    m_child_exec = child_exec;
-    m_service_name = a_service_name;
+    m_child_exec = ncw.child_exec;
+    m_service_name = ncw.worker_name;
+    m_node_uuid = ncw.node_uuid;
+    m_node_password = ncw.node_password;
 
     BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
-    qDebug() << "!!!!   EXEC PROCESS : " << child_exec;
+    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
     child_process->start(m_child_exec);
 
     connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
@@ -163,6 +166,8 @@ void Service::readyReadStandardOutput()
 
             b_datas << "type" << "service";
             b_datas << "session_uuid" << m_session_uuid.toStdString();
+            b_datas << "node_uuid" << m_node_uuid.toStdString();
+            b_datas << "node_password" << m_node_password.toStdString();
             b_datas << "name" << m_service_name.toStdString() << "action" << "get_file" << "timestamp" << timestamp.toTime_t();
 
             BSONObj s_datas = b_datas.obj();
@@ -178,6 +183,8 @@ void Service::readyReadStandardOutput()
         {
             b_datas << "type" << "service";
             b_datas << "session_uuid" << m_session_uuid.toStdString();
+            b_datas << "node_uuid" << m_node_uuid.toStdString();
+            b_datas << "node_password" << m_node_password.toStdString();
             b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << b_out;
 
         }
@@ -191,6 +198,8 @@ void Service::readyReadStandardOutput()
             {
                 b_datas << "type" << "service";
                 b_datas << "session_uuid" << m_session_uuid.toStdString();
+                b_datas << "node_uuid" << m_node_uuid.toStdString();
+                b_datas << "node_password" << m_node_password.toStdString();
                 b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
             }
     }

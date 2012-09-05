@@ -87,42 +87,41 @@ Zworker::~Zworker()
 }
 
 
-void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
+//void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
+void Zworker::Init(ncw_params ncw)
 {
-
-    qDebug() << worker_type;
     qRegisterMetaType<bson::bo>("bson::bo");
     qRegisterMetaType<string>("string");
 
 
-    switch (enumToWorker[worker_type])
+    switch (enumToWorker[ncw.worker_type])
     {   
     case WSERVICE:
-        qDebug() << "WSERVICE : " << worker_type ;
+        qDebug() << "WSERVICE : " << ncw.worker_type ;
         //zeromq->payloader();
         service = new Service();
         connect(zeromq->payload, SIGNAL(payload(bson::bo)), service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
         connect(zeromq->payload, SIGNAL(emit_pubsub(string)), service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
 
         connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        service->init(child_exec, worker_name);
+        service->init(ncw);
         connect(service, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
         connect(service, SIGNAL(get_stream(bson::bo)), zeromq->stream, SLOT(get_stream(bson::bo)), Qt::BlockingQueuedConnection);
         break;
 
     case WPROCESS:
-        qDebug() << "WPROCESS : " << worker_type ;
+        qDebug() << "WPROCESS : " << ncw.worker_type ;
         //zeromq->payloader();
         process = new Process();
         connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
 
         connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        process->init(child_exec, worker_name);
+        process->init(ncw);
         connect(process, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
         break;
 
     default:
-        qDebug() << "worker unknown : " << worker_type ;
+        qDebug() << "worker unknown : " << ncw.worker_type ;
         delete(this);
         qApp->exit (1);
     }
@@ -137,11 +136,9 @@ int main(int argc, char *argv[])
 
     bool debug;
     bool verbose;
-    QString worker_type;
-    QString worker_name;
-    QString ncs_ip;
-    QString ncs_port;
-    QString child_exec;
+
+    ncw_params ncw;
+
 
     enumToWorker.insert(QString("service"), WSERVICE);
     enumToWorker.insert(QString("process"), WPROCESS);
@@ -155,7 +152,7 @@ int main(int argc, char *argv[])
     options.add("worker-type", "set the worker type (|service|process|)", QxtCommandOptions::Required);
     options.alias("worker-type", "wt");
 
-    options.add("worker-name", "set the worker name", QxtCommandOptions::Optional);
+    options.add("worker-name", "set the worker name", QxtCommandOptions::Required);
     options.alias("worker-name", "wn");
 
     options.add("ncs-ip", "set the nodecast ip", QxtCommandOptions::Required);
@@ -163,7 +160,11 @@ int main(int argc, char *argv[])
     options.add("ncs-port", "set the nodecast port", QxtCommandOptions::Required);
     options.alias("ncs-port", "npt");
 
-    options.add("exec", "set the exec program to launch", QxtCommandOptions::Optional);
+    options.add("node-uuid", "set the node uuid", QxtCommandOptions::Required);
+    options.add("node-password", "set the node password", QxtCommandOptions::Required);
+
+
+    options.add("exec", "set the exec program to launch", QxtCommandOptions::Required);
     options.alias("exec", "ex");
 
 
@@ -179,41 +180,70 @@ int main(int argc, char *argv[])
     verbose = options.count("verbose");
 
     if(options.count("worker-type")) {
-        worker_type = options.value("worker-type").toString();
+        ncw.worker_type = options.value("worker-type").toString();
+        if (ncw.worker_type != "service" && ncw.worker_type != "process")
+        {
+            std::cout << "ncw: --worker-type accept only process or service" << std::endl;
+            options.showUsage();
+            return -1;
+        }
     }
     else {
-        std::cout << "nodecast-worker: --worker-type requires a parameter" << std::endl;
+        std::cout << "ncw: --worker-type requires a parameter" << std::endl;
         options.showUsage();
         return -1;
     }
 
     if(options.count("worker-name")) {
-        worker_name = options.value("worker-name").toString();
+        ncw.worker_name = options.value("worker-name").toString();
     }
 
 
     if(options.count("ncs-port")) {
-        ncs_port = options.value("ncs-port").toString();
+        ncw.ncs_port = options.value("ncs-port").toString();
     }
     else {
-        std::cout << "nodecast-dispatcher: --ncs-port requires a parameter" << std::endl;
+        std::cout << "ncw: --ncs-port requires a parameter" << std::endl;
         options.showUsage();
         return -1;
     }
 
 
     if(options.count("ncs-ip")) {
-        ncs_ip = options.value("ncs-ip").toString();
+        ncw.ncs_ip = options.value("ncs-ip").toString();
     }
     else {
-        std::cout << "nodecast-dispatcher: --ncs-ip requires a parameter" << std::endl;
+        std::cout << "ncw: --ncs-ip requires a parameter" << std::endl;
+        options.showUsage();
+        return -1;
+    }
+
+    if(options.count("node-uuid")) {
+        ncw.node_uuid = options.value("node-uuid").toString();
+    }
+    else {
+        std::cout << "ncw: --node-uuid requires a parameter" << std::endl;
+        options.showUsage();
+        return -1;
+    }
+
+    if(options.count("node-password")) {
+        ncw.node_password = options.value("node-password").toString();
+    }
+    else {
+        std::cout << "ncw: --node-password requires a parameter" << std::endl;
         options.showUsage();
         return -1;
     }
 
 
     if(options.count("exec")) {
-        child_exec = options.value("exec").toString();
+        ncw.child_exec = options.value("exec").toString();
+    }
+    else {
+        std::cout << "ncw: --exec requires a parameter" << std::endl;
+        options.showUsage();
+        return -1;
     }
 
 
@@ -232,8 +262,11 @@ int main(int argc, char *argv[])
     Zworker *zworker = new Zworker;
 
 
-    zworker->zeromq = new Zeromq(ncs_ip, ncs_port, worker_name);
-    zworker->Init(worker_type, worker_name, child_exec);
+//    zworker->zeromq = new Zeromq(ncs_ip, ncs_port, worker_name);
+//    zworker->Init(worker_type, worker_name, child_exec);
+
+    zworker->zeromq = new Zeromq(ncw.ncs_ip, ncw.ncs_port, ncw.worker_name);
+    zworker->Init(ncw);
 
 
     qDebug() << "end";

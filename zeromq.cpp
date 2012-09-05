@@ -369,7 +369,7 @@ void Zpayload::pubsub_payload()
         while (true) {
             zmq::message_t request;
 
-            bool res = m_socket_pubsub->recv (&request, ZMQ_NOBLOCK);
+            bool res = m_socket_pubsub->recv (&request);
             if (res == -1 && zmq_errno () == EAGAIN) break;
 
             std::cout << "Zpayload::pubsub_payload data : " <<  (char*)request.data() <<  std::endl;

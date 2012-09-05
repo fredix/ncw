@@ -31,4 +31,5 @@ HEADERS += main.h \
     zeromq.h \
     process.h \
     service.h \
-    worker.h
+    worker.h \
+    ncw_global.h

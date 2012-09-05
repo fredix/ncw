@@ -38,12 +38,15 @@ Process::~Process()
 }
 
 
-void Process::init(QString child_exec, QString a_process_name)
+//void Process::init(QString child_exec, QString a_process_name)
+void Process::init(ncw_params ncw)
 {
     QDateTime timestamp = QDateTime::currentDateTime();    
 
-    m_child_exec = child_exec;     
-    m_process_name = a_process_name;
+    m_child_exec = ncw.child_exec;
+    m_process_name = ncw.worker_name;
+    m_node_uuid = ncw.node_uuid;
+    m_node_password = ncw.node_password;
 
     BSONObj tracker = BSON("type" << "worker" << "name" << m_process_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);

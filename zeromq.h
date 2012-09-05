@@ -36,9 +36,10 @@
 #include "mongo/client/dbclient.h"
 #include "mongo/bson/bson.h"
 
+#include "ncw_global.h"
+
 using namespace mongo;
 using namespace bson;
-
 
 
 class Zstream : public QObject

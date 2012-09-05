@@ -22,21 +22,7 @@ last, make the nodecast worker :
 qmake
 make
 
-
-USE
-===
-
-Launch a worker :
-ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="ls" --exec="ls"
-
-ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=process --worker-name="rm" --exec="rm"
-
-
-Launch a service :
-ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --worker-type=service  --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
-
-
-TEST API
+API
 --------
 
 MONGODB
@@ -59,5 +45,23 @@ return a session uuid : {"uuid":"7b32b9d0-3ea9-4663-9577-4b34192055bf"}
 
 
 ../bin/mongodb/bin/mongofiles -d yourbase list
+
+
+USE
+===
+
+create a node :
+
+curl -H "X-nodename: your-node-name" --user "email:token" http://ncs-ip:4567/node/create
+return node auth : {"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node_uuid":"2d0a7780-e8fe-4e0a-89c6-a5a2737b095a"}
+
+
+Launch a worker :
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=process --worker-name="ls" --exec="ls"
+
+Launch a service :
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=service --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
+
+
 
 contact : fredix at nodecast dot net
