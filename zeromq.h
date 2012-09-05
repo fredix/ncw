@@ -97,7 +97,7 @@ class Zpayload : public QObject
 {
     Q_OBJECT
 public:
-    Zpayload(zmq::context_t *a_context, QString a_host, QString a_worker_name);
+    Zpayload(zmq::context_t *a_context, ncw_params ncw);
     ~Zpayload();
 
 
@@ -117,6 +117,8 @@ private:
     QString m_port;
     QString m_worker_name;
     QString m_uuid;
+    QString m_node_uuid;
+    QString m_node_password;
 
 signals:    
     void payload(bson::bo data);
@@ -134,7 +136,7 @@ class Zeromq : public QObject
 {
     Q_OBJECT
 public:
-    Zeromq(QString a_host, QString a_port, QString a_worker_name);
+    Zeromq(ncw_params ncw);
     ~Zeromq();
     void payloader();
 
@@ -155,9 +157,7 @@ public slots:
 private:
     QMutex *m_port_mutex;
     zmq::context_t *m_context;
-    QString m_host;
-    QString m_port;
-    QString m_worker_name;
+    ncw_params m_ncw;
 
     static int sighupFd[2];
     static int sigtermFd[2];

@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 //    zworker->zeromq = new Zeromq(ncs_ip, ncs_port, worker_name);
 //    zworker->Init(worker_type, worker_name, child_exec);
 
-    zworker->zeromq = new Zeromq(ncw.ncs_ip, ncw.ncs_port, ncw.worker_name);
+    zworker->zeromq = new Zeromq(ncw);
     zworker->Init(ncw);
 
 

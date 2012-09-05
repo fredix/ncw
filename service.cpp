@@ -183,8 +183,6 @@ void Service::readyReadStandardOutput()
         {
             b_datas << "type" << "service";
             b_datas << "session_uuid" << m_session_uuid.toStdString();
-            b_datas << "node_uuid" << m_node_uuid.toStdString();
-            b_datas << "node_password" << m_node_password.toStdString();
             b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << b_out;
 
         }
@@ -198,8 +196,6 @@ void Service::readyReadStandardOutput()
             {
                 b_datas << "type" << "service";
                 b_datas << "session_uuid" << m_session_uuid.toStdString();
-                b_datas << "node_uuid" << m_node_uuid.toStdString();
-                b_datas << "node_password" << m_node_password.toStdString();
                 b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
             }
     }

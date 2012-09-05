@@ -319,7 +319,7 @@ Zpayload::~Zpayload()
 }
 
 
-Zpayload::Zpayload(zmq::context_t *a_context, QString a_host, QString a_worker_name) : m_context(a_context), m_host(a_host), m_worker_name(a_worker_name)
+Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_context), m_host(ncw.ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
 
@@ -479,7 +479,7 @@ void Zpayload::push_payload(BSONObj data)
     /****** PUSH API PAYLOAD *******/
     std::cout << "Zpayload:: PUSH PAYLOAD : " <<  data << std::endl;
 
-    BSONObj l_payload = BSON("payload" << data << "uuid" << m_uuid.toStdString());
+    BSONObj l_payload = BSON("payload" << data << "uuid" << m_uuid.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "node_password" << m_node_password.toStdString());
 
     std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
 
@@ -562,7 +562,7 @@ Zeromq::~Zeromq()
 }
 
 
-Zeromq::Zeromq(QString a_host, QString a_port, QString a_worker_name) : m_host(a_host), m_port(a_port), m_worker_name(a_worker_name)
+Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 {
     qDebug() << "Zeromq::construct";
 
@@ -581,7 +581,7 @@ Zeromq::Zeromq(QString a_host, QString a_port, QString a_worker_name) : m_host(a
 
 
     QThread *thread_tracker = new QThread;
-    tracker = new Ztracker(m_context, m_host, m_port);
+    tracker = new Ztracker(m_context, m_ncw.ncs_ip, m_ncw.ncs_port);
     connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
     tracker->moveToThread(thread_tracker);
     thread_tracker->start();
@@ -592,7 +592,7 @@ Zeromq::Zeromq(QString a_host, QString a_port, QString a_worker_name) : m_host(a
     QThread *thread_payload = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    payload = new Zpayload(m_context, m_host, m_worker_name);
+    payload = new Zpayload(m_context, m_ncw);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     payload->moveToThread(thread_payload);
     thread_payload->start();
@@ -606,7 +606,7 @@ Zeromq::Zeromq(QString a_host, QString a_port, QString a_worker_name) : m_host(a
     QThread *thread_stream = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    stream = new Zstream(m_context, m_host);
+    stream = new Zstream(m_context, m_ncw.ncs_ip);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     stream->moveToThread(thread_stream);
     thread_stream->start();
@@ -624,7 +624,7 @@ void Zeromq::payloader()
     QThread *thread_payload = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    payload = new Zpayload(m_context, m_host, m_worker_name);
+    payload = new Zpayload(m_context, m_ncw);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     payload->moveToThread(thread_payload);
     thread_payload->start();
