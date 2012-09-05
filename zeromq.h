@@ -109,7 +109,6 @@ private:
     zmq::message_t *m_message;
     zmq::message_t *m_pubsub_message;
 
-
     zmq::context_t *m_context;
     zmq::socket_t *m_receiver;
 

@@ -324,20 +324,27 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
     std::cout << "Zpayload::Zpayload construct" << std::endl;
 
     QString connection_string = "tcp://" + m_host + ":5555";
-    QString connection_pubsub_string = "tcp://" + m_host + ":5557";
+    QByteArray t_connection_string = connection_string.toAscii();
 
     m_socket_worker = new zmq::socket_t (*m_context, ZMQ_PUSH);
     uint64_t hwm = 50000;
     m_socket_worker->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
-    m_socket_worker->connect(connection_string.toAscii());
+    m_socket_worker->connect(t_connection_string.constData());
 
 
     /************ PUBSUB SOCKET ***************/
-    const char *filter = m_worker_name.toAscii();
+    QString connection_pubsub_string = "tcp://" + m_host + ":5557";
+    QByteArray t_connection_pubsub_string = connection_pubsub_string.toAscii();
+
+    QByteArray filter = m_worker_name.toAscii() + " ";
+
+    qDebug() << "FILTER : " << filter;
+
     m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
-    m_socket_pubsub->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter, strlen (filter));
-    m_socket_pubsub->connect(connection_pubsub_string.toAscii());
+    uint64_t pub_hwm = 50000;
+    m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter.data(), filter.size());
+    m_socket_pubsub->connect(t_connection_pubsub_string.constData());
     /******************************************/
 
 
@@ -347,8 +354,10 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
 
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
 
+
+
     check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
-    connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()));
+    connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()), Qt::DirectConnection);
 }
 
 void Zpayload::pubsub_payload()
@@ -365,11 +374,10 @@ void Zpayload::pubsub_payload()
     {
         std::cout << "Zpayload::pubsub_payload ZMQ_POLLIN" <<  std::endl;
 
-
         while (true) {
             zmq::message_t request;
 
-            bool res = m_socket_pubsub->recv (&request);
+            bool res = m_socket_pubsub->recv (&request, ZMQ_NOBLOCK);
             if (res == -1 && zmq_errno () == EAGAIN) break;
 
             std::cout << "Zpayload::pubsub_payload data : " <<  (char*)request.data() <<  std::endl;
@@ -421,7 +429,6 @@ void Zpayload::pubsub_payload()
             */
         }
     }
-
     check_pubsub_payload->setEnabled(true);
 }
 
