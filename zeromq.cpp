@@ -338,8 +338,8 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
 
     QByteArray filter1 = m_worker_name.toAscii() + " ";
     QByteArray filter2 = m_node_uuid.toAscii() + " ";
-    QByteArray filter3 = m_worker_name.toAscii() + "." + m_node_uuid.toAscii() + " ";
-    QByteArray filter4 = m_worker_name.toAscii() + "." + m_node_uuid.toAscii() + "." + m_uuid.toAscii() + " ";
+    QByteArray filter3 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + " ";
+    QByteArray filter4 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + "." + m_uuid.toAscii() + " ";
 
     qDebug() << "FILTER1 : " << filter1;
     qDebug() << "FILTER2 : " << filter2;
@@ -496,7 +496,7 @@ void Zpayload::push_payload(BSONObj data)
     /****** PUSH API PAYLOAD *******/
     std::cout << "Zpayload:: PUSH PAYLOAD : " <<  data << std::endl;
 
-    BSONObj l_payload = BSON("payload" << data << "uuid" << m_uuid.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "node_password" << m_node_password.toStdString());
+    BSONObj l_payload = BSON("payload" << data << "worker_name" << m_worker_name.toStdString() << "uuid" << m_uuid.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "node_password" << m_node_password.toStdString());
 
     std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
 
