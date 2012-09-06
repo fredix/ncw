@@ -336,14 +336,24 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
     QString connection_pubsub_string = "tcp://" + m_host + ":5557";
     QByteArray t_connection_pubsub_string = connection_pubsub_string.toAscii();
 
-    QByteArray filter = m_worker_name.toAscii() + " ";
+    QByteArray filter1 = m_worker_name.toAscii() + " ";
+    QByteArray filter2 = m_node_uuid.toAscii() + " ";
+    QByteArray filter3 = m_worker_name.toAscii() + "." + m_node_uuid.toAscii() + " ";
+    QByteArray filter4 = m_worker_name.toAscii() + "." + m_node_uuid.toAscii() + "." + m_uuid.toAscii() + " ";
 
-    qDebug() << "FILTER : " << filter;
+    qDebug() << "FILTER1 : " << filter1;
+    qDebug() << "FILTER2 : " << filter2;
+    qDebug() << "FILTER3 : " << filter3;
+    qDebug() << "FILTER4 : " << filter4;
 
     m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
     uint64_t pub_hwm = 50000;
     m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter.data(), filter.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter1.data(), filter1.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter2.data(), filter2.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter3.data(), filter3.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter4.data(), filter4.size());
+
     m_socket_pubsub->connect(t_connection_pubsub_string.constData());
     /******************************************/
 

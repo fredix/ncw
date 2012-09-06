@@ -152,8 +152,9 @@ void Service::readyReadStandardOutput()
         b_out = mongo::fromjson(json.toAscii());
         std::cout << "b_out : " << b_out << std::endl;
 
-        if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0
-                                      || b_out.getField("action").str().compare("publish") == 0))
+        if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0                                      
+                                         || b_out.getField("action").str().compare("publish") == 0
+                                         || b_out.getField("action").str().compare("replay") == 0))
         {
             qDebug() << "WORKER SERVICE BEFORE CREATE PAYLOAD EMIT";
             emit push_payload(b_out);
