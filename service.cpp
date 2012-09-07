@@ -96,7 +96,7 @@ void Service::s_job_receive(bson::bo data) {
     qDebug() << "Service::s_job_receive";
     //m_mutex->lock();
 
-    BSONElement r_datas = data.getField("datas");
+    BSONElement r_datas = data.getField("data");
     BSONElement session_uuid = data.getField("session_uuid");
     m_session_uuid = QString::fromStdString(session_uuid.str());
     //data.getField("step_id").Obj().getObjectID(step_id);

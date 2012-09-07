@@ -68,7 +68,7 @@ void Process::s_job_receive(bson::bo data) {
 
     qDebug() << "process::s_job_receive";
 
-    BSONElement r_datas = data.getField("datas");
+    BSONElement r_datas = data.getField("data");
     BSONElement session_uuid = data.getField("session_uuid");
     //data.getField("step_id").Obj().getObjectID(step_id);
 
