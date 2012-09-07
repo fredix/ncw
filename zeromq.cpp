@@ -358,19 +358,14 @@ void Zpayload::pubsub_payload()
             std::cout << "Zpayload::pubsub_payload data : " <<  (char*)request.data() <<  std::endl;
 
 
-            char *plop = (char*) request.data();
-            if (strlen(plop) == 0) {
+            char *payload = (char*) request.data();
+            if (strlen(payload) == 0) {
                 std::cout << "Zpayload::pubsub_payload STRLEN received request 0" << std::endl;
                 break;
             }
 
-
-            QString raw_data = QString::fromAscii(plop);
-
-            raw_data.remove(m_worker_name + " ");
+            QString raw_data = QString::fromAscii(payload);
             qDebug() << "RAW DATA : " << raw_data;
-
-
 
             emit emit_pubsub(raw_data.toStdString());
 
