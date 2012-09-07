@@ -332,42 +332,7 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
     m_socket_worker->connect(t_connection_string.constData());
 
 
-    /************ PUBSUB SOCKET ***************/
-    QString connection_pubsub_string = "tcp://" + m_host + ":5557";
-    QByteArray t_connection_pubsub_string = connection_pubsub_string.toAscii();
 
-    QByteArray filter1 = m_worker_name.toAscii() + " ";
-    QByteArray filter2 = m_node_uuid.toAscii() + " ";
-    QByteArray filter3 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + " ";
-    QByteArray filter4 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + "." + m_uuid.toAscii() + " ";
-
-    qDebug() << "FILTER1 : " << filter1;
-    qDebug() << "FILTER2 : " << filter2;
-    qDebug() << "FILTER3 : " << filter3;
-    qDebug() << "FILTER4 : " << filter4;
-
-    m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
-    uint64_t pub_hwm = 50000;
-    m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter1.data(), filter1.size());
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter2.data(), filter2.size());
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter3.data(), filter3.size());
-    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter4.data(), filter4.size());
-
-    m_socket_pubsub->connect(t_connection_pubsub_string.constData());
-    /******************************************/
-
-
-    int pubsub_payload_socket_fd;
-    size_t socket_size = sizeof(pubsub_payload_socket_fd);
-    m_socket_pubsub->getsockopt(ZMQ_FD, &pubsub_payload_socket_fd, &socket_size);
-
-    qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
-
-
-
-    check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
-    connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()), Qt::DirectConnection);
 }
 
 void Zpayload::pubsub_payload()
@@ -473,6 +438,42 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     check_receive_payload = new QSocketNotifier(payload_socket_fd, QSocketNotifier::Read, this);
     connect(check_receive_payload, SIGNAL(activated(int)), this, SLOT(receive_payload()));
 
+
+    /************ PUBSUB SOCKET ***************/
+    QString connection_pubsub_string = "tcp://" + m_host + ":5557";
+    QByteArray t_connection_pubsub_string = connection_pubsub_string.toAscii();
+
+    QByteArray filter1 = m_worker_name.toAscii() + " ";
+    QByteArray filter2 = m_node_uuid.toAscii() + " ";
+    QByteArray filter3 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + " ";
+    QByteArray filter4 = m_node_uuid.toAscii() + "." + m_worker_name.toAscii() + "." + m_uuid.toAscii() + " ";
+
+    qDebug() << "FILTER1 : " << filter1;
+    qDebug() << "FILTER2 : " << filter2;
+    qDebug() << "FILTER3 : " << filter3;
+    qDebug() << "FILTER4 : " << filter4;
+
+    m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
+    uint64_t pub_hwm = 50000;
+    m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter1.data(), filter1.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter2.data(), filter2.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter3.data(), filter3.size());
+    m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter4.data(), filter4.size());
+
+    m_socket_pubsub->connect(t_connection_pubsub_string.constData());
+
+
+    int pubsub_payload_socket_fd;
+    size_t pubsub_socket_size = sizeof(pubsub_payload_socket_fd);
+    m_socket_pubsub->getsockopt(ZMQ_FD, &pubsub_payload_socket_fd, &pubsub_socket_size);
+
+    qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
+
+
+    check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
+    connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()), Qt::DirectConnection);
+    /******************************************/
 
 
     /*  Process tasks forever
