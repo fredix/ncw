@@ -84,7 +84,9 @@ void Service::get_pubsub(string data)
     std::cout << "Service::get_pubsub data : " << data << std::endl;
 
     QString payload = QString::fromStdString(data);
-    payload.remove(QRegExp("([^@]*@).*"));
+
+    QRegExp filter("([^@]*@).*");
+    payload.remove(filter.cap(1));
 
     qDebug() << "PAYLOAD : " << payload;
 
