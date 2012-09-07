@@ -83,9 +83,16 @@ void Service::get_pubsub(string data)
 {
     std::cout << "Service::get_pubsub data : " << data << std::endl;
 
+    QString filter = QString::fromStdString(data);
+
+    QStringList list = filter.split(" ");
+
+    QString payload = list.at(1);
+
+    qDebug() << "PAYLOAD : " << payload;
 
     //child_process->write(data.toString().data());
-    child_process->write(data.c_str());
+    child_process->write(payload.toAscii());
     child_process->write("\n");
     //child_process->waitForBytesWritten(100000);
 }
