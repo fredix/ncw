@@ -3,24 +3,37 @@ ncw is the nodecast worker
 INSTALL
 =======
 
-
-first, install deb :
+install deb :
 apt-get install libzmq-dev libboost-all-dev libqt4-dev
+(if libzmq-dev (<= 2.2.x) is not packaged in your Linux distribution
+get it from http://www.zeromq.org/intro:get-the-software)
 
-next, get submodule libraries :
+
+get submodule libraries :
 git submodule update --init
 
-If you prefer to use your system's libraries, you should modify the ncw.pro
 
 
-second, make the mongodb client :
+install libqxt or your distribution's package libqxt-dev (>= 0.6.2)
+cd external/libqxt
+./configure
+make
+sudo make install
+sudo echo "/usr/local/Qxt/lib/" >> /etc/ld.so.conf.d/x86_64-linux-gnu.conf
+sudo ldconfig
+
+make the mongodb client :
 cd externals/mongodb
 scons mongoclient
 sudo cp libmongoclient.a /usr/local/lib
+sudo ldconfig
 
 last, make the nodecast worker :
 qmake
 make
+mkdir ~/bin
+cp ncw ~/bin
+
 
 API
 --------
