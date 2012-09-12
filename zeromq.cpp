@@ -341,11 +341,16 @@ void Zpayload::pubsub_payload()
 
     qDebug() << "Zpayload::pubsub_payload";
 
+/*
     qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
     m_socket_pubsub->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
+*/
+    zmq::poll (&m_items[0], 2, 0);
 
-    if (events & ZMQ_POLLIN)
+
+    //if (events & ZMQ_POLLIN)
+    if (m_items[1].revents & ZMQ_POLLIN)
     {
         std::cout << "Zpayload::pubsub_payload ZMQ_POLLIN" <<  std::endl;
 
@@ -430,6 +435,12 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
 
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << payload_socket_fd << " errno : " << zmq_strerror (errno);
 
+    m_items[0].socket = (void *)*m_receiver;
+    //m_items[0].socket = NULL;
+    //m_items[0].fd = payload_socket_fd;
+    m_items[0].events = ZMQ_POLLIN;
+
+
     check_receive_payload = new QSocketNotifier(payload_socket_fd, QSocketNotifier::Read, this);
     connect(check_receive_payload, SIGNAL(activated(int)), this, SLOT(receive_payload()));
 
@@ -466,9 +477,17 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     qDebug() << "RES getsockopt : " << "res" <<  " FD : " << pubsub_payload_socket_fd << " errno : " << zmq_strerror (errno);
 
 
+    m_items[1].socket = (void *)*m_socket_pubsub;
+    //m_items[1].socket = NULL;
+    //m_items[1].fd = pubsub_payload_socket_fd;
+    m_items[1].events = ZMQ_POLLIN;
+
+
     check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
     connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()), Qt::DirectConnection);
     /******************************************/
+
+
 
 
     // when the pubsub socket is connected (but in fact not ready) I launch the worker
@@ -498,15 +517,20 @@ void Zpayload::receive_payload()
 
     std::cout << "Zpayload::receive_payload" << std::endl;
 
-    qint32 events = 0;
+/*    qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
 
     m_receiver->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
 
     std::cout << "Zpayload::receive_payload ZMQ_EVENTS : " <<  events << std::endl;
 
+*/
+    zmq::poll (&m_items[0], 2, 0);
 
-    if (events & ZMQ_POLLIN)
+
+    //if (events & ZMQ_POLLIN)
+
+    if (m_items[0].revents & ZMQ_POLLIN)
     {
         std::cout << "Zpayload::receive_payload ZMQ_POLLIN" <<  std::endl;
 

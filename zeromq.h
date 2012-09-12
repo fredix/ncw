@@ -116,6 +116,7 @@ private:
     zmq::socket_t *m_socket_pubsub;
     zmq::message_t *m_message;
     zmq::message_t *m_pubsub_message;
+    zmq_pollitem_t m_items [2];
 
     zmq::context_t *m_context;
     zmq::socket_t *m_receiver;
