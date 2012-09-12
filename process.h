@@ -28,11 +28,9 @@
 class Process : public Worker
 {
 public:
-    Process();
+    Process(ncw_params a_ncw);
     ~Process();
-    //void init(QString child_exec, QString a_process_name);
-    void init(ncw_params ncw);
-
+    void init();
 
 private:
     QTimer *timer;
@@ -44,6 +42,7 @@ private:
     QString m_output;
     int m_exitcode;
     int m_exitstatus;
+    ncw_params m_ncw;
 
 private slots:
     void watchdog();

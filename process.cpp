@@ -20,7 +20,7 @@
 
 #include "process.h"
 
-Process::Process() : Worker()
+Process::Process(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 {
     process = new QProcess();
     connect(process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(process_finished(int,QProcess::ExitStatus)));
@@ -39,14 +39,14 @@ Process::~Process()
 
 
 //void Process::init(QString child_exec, QString a_process_name)
-void Process::init(ncw_params ncw)
+void Process::init()
 {
     QDateTime timestamp = QDateTime::currentDateTime();    
 
-    m_child_exec = ncw.child_exec;
-    m_process_name = ncw.worker_name;
-    m_node_uuid = ncw.node_uuid;
-    m_node_password = ncw.node_password;
+    m_child_exec = m_ncw.child_exec;
+    m_process_name = m_ncw.worker_name;
+    m_node_uuid = m_ncw.node_uuid;
+    m_node_password = m_ncw.node_password;
 
     BSONObj tracker = BSON("type" << "worker" << "name" << m_process_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);

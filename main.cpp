@@ -69,65 +69,7 @@ static void setup_unix_signal_handlers()
     sigaction (SIGTERM, &term, NULL);
 }
 
-StringToEnumMap enumToWorker;
 
-
-
-Zworker::Zworker()
-{
-    qDebug() << "Zworker construct";
-    worker = NULL;
-    service = NULL;
-}
-
-Zworker::~Zworker()
-{
-    qDebug() << "DELETE ZWORKER !!!!!";
-    delete(this->zeromq);
-}
-
-
-//void Zworker::Init(QString worker_type, QString worker_name, QString child_exec)
-void Zworker::Init(ncw_params ncw)
-{
-    qRegisterMetaType<bson::bo>("bson::bo");
-    qRegisterMetaType<string>("string");
-
-
-    switch (enumToWorker[ncw.worker_type])
-    {   
-    case WSERVICE:
-        qDebug() << "WSERVICE : " << ncw.worker_type ;
-        //zeromq->payloader();
-        service = new Service();
-        connect(zeromq->payload, SIGNAL(payload(bson::bo)), service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
-        connect(zeromq->payload, SIGNAL(emit_pubsub(string)), service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
-
-        connect(service, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        service->init(ncw);
-        connect(service, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
-        connect(service, SIGNAL(get_stream(bson::bo)), zeromq->stream, SLOT(get_stream(bson::bo)), Qt::BlockingQueuedConnection);
-        break;
-
-    case WPROCESS:
-        qDebug() << "WPROCESS : " << ncw.worker_type ;
-        //zeromq->payloader();
-        process = new Process();
-        connect(zeromq->payload, SIGNAL(payload(bson::bo)), process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
-
-        connect(process, SIGNAL(return_tracker(bson::bo)), zeromq->tracker, SLOT(push_tracker(bson::bo)));
-        process->init(ncw);
-        connect(process, SIGNAL(push_payload(bson::bo)), zeromq->payload, SLOT(push_payload(bson::bo)));
-        break;
-
-    default:
-        qDebug() << "worker unknown : " << ncw.worker_type ;
-        delete(this);
-        qApp->exit (1);
-    }
-
-
-}
 
 
 
@@ -139,9 +81,6 @@ int main(int argc, char *argv[])
 
     ncw_params ncw;
 
-
-    enumToWorker.insert(QString("service"), WSERVICE);
-    enumToWorker.insert(QString("process"), WPROCESS);
 
     QCoreApplication nodecast_worker(argc, argv);
 
@@ -259,14 +198,8 @@ int main(int argc, char *argv[])
 
     setup_unix_signal_handlers();
 
-    Zworker *zworker = new Zworker;
 
-
-//    zworker->zeromq = new Zeromq(ncs_ip, ncs_port, worker_name);
-//    zworker->Init(worker_type, worker_name, child_exec);
-
-    zworker->zeromq = new Zeromq(ncw);
-    zworker->Init(ncw);
+    Zeromq zeromq(ncw);
 
 
     qDebug() << "end";

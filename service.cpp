@@ -20,7 +20,7 @@
 
 #include "service.h"
 
-Service::Service() : Worker()
+Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 {
     qDebug() << "Service::Service constructer";
     child_process = new QProcess();
@@ -39,21 +39,57 @@ Service::~Service()
 }
 
 
-//void Service::init(QString child_exec, QString a_service_name)
-void Service::init(ncw_params ncw)
+void Service::init()
 {
     QDateTime timestamp = QDateTime::currentDateTime();
 
-    m_child_exec = ncw.child_exec;
-    m_service_name = ncw.worker_name;
-    m_node_uuid = ncw.node_uuid;
-    m_node_password = ncw.node_password;
+    m_child_exec = m_ncw.child_exec;
+    m_service_name = m_ncw.worker_name;
+    m_node_uuid = m_ncw.node_uuid;
+    m_node_password = m_ncw.node_password;
 
     BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
-    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
+/*    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
     child_process->start(m_child_exec);
+    bool start = child_process->waitForStarted(30000);
+
+    if (!start)
+    {
+        qDebug() << "SERVICE IS NOT STARTED";
+        qApp->exit();
+    }
+
+
+    connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
+
+
+    qDebug() << "PID : " << child_process->pid();*/
+}
+
+
+
+void Service::launch()
+{
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+    m_child_exec = m_ncw.child_exec;
+    m_service_name = m_ncw.worker_name;
+    m_node_uuid = m_ncw.node_uuid;
+    m_node_password = m_ncw.node_password;
+
+
+    qDebug() << "!!!!   EXEC PROCESS : " << m_ncw.child_exec;
+    child_process->start(m_child_exec);
+    bool start = child_process->waitForStarted(30000);
+
+    if (!start)
+    {
+        qDebug() << "SERVICE IS NOT STARTED";
+        qApp->exit();
+    }
+
 
     connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
 
@@ -64,13 +100,13 @@ void Service::init(ncw_params ncw)
 
 void Service::watchdog()
 {
-    if (child_process->state() == QProcess::NotRunning)
+ /*   if (child_process->state() == QProcess::NotRunning)
     {
-        /*** child is dead, so we exit the worker */
-        qDebug() << "CHILD IS DEAD";
+        ** child is dead, so we exit the worker
+        qDebug() << "SERVICE IS NOT RUNNING";
         qApp->exit();
     }
-
+*/
     QDateTime timestamp = QDateTime::currentDateTime();
 
     BSONObj tracker = BSON("type" << "service" << "action" << "watchdog" << "timestamp" << timestamp.toTime_t());

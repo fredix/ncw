@@ -44,8 +44,7 @@ class Worker : public QObject
 public:
     Worker(QObject *parent = 0);
     ~Worker();
-    virtual void init(QString child_exec);
-
+    virtual void init()=0;
 
 private slots:    
     virtual void watchdog()=0;
@@ -58,7 +57,8 @@ signals:
     virtual void return_tracker(bson::bo data);
     virtual void get_stream(bson::bo data);
 
-public slots:     
+public slots:
+    virtual void launch();
     virtual void s_job_receive(bson::bo data)=0;
     virtual void get_pubsub(string data);
 };

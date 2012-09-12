@@ -27,10 +27,9 @@
 class Service : public Worker
 {    
 public:
-    Service();
+    Service(ncw_params a_ncw);
     ~Service();
-    //void init(QString child_exec, QString a_service_name);
-    void init(ncw_params ncw);
+    void init();
 
 private:
     QMutex *m_mutex;
@@ -41,14 +40,17 @@ private:
     QString m_session_uuid;
     QString m_node_uuid;
     QString m_node_password;
+    ncw_params m_ncw;
+
 
 private slots:
      void watchdog();
      void readyReadStandardOutput();
 
-public slots:
-    void s_job_receive(bson::bo data);
-    void get_pubsub(string data);
+public slots:          
+     void launch();
+     void s_job_receive(bson::bo data);
+     void get_pubsub(string data);
 };
 
 #endif // SERVICE_H

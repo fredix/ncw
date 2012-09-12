@@ -30,7 +30,10 @@ Worker::~Worker()
 
 
 
-void Worker::init(QString child_exec)
+void Worker::init()
+{}
+
+void Worker::launch()
 {}
 
 

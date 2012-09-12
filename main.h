@@ -36,28 +36,5 @@
 
 
 
-enum WorkerType {
-    WSERVICE=1,
-    WPROCESS=2
-};
-
-typedef QMap<QString, WorkerType> StringToEnumMap;
-
-
-
-class Zworker : public QObject
-{
-    Q_OBJECT
-public:
-    Zworker();
-    ~Zworker();
-    //void Init(QString worker_type, QString worker_name, QString child_exec);
-    void Init(ncw_params ncw);
-    Zeromq *zeromq;
-    Worker *worker;
-    Process *process;
-    Service *service;
-};
-
 
 #endif // MAIN_H

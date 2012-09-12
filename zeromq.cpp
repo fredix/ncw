@@ -319,7 +319,7 @@ Zpayload::~Zpayload()
 }
 
 
-Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_context), m_host(ncw.ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password)
+Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_context), m_host(ncw.ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password), m_ncw(ncw)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
 
@@ -471,6 +471,8 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     /******************************************/
 
 
+    emit emit_launch_worker(m_ncw);
+
     /*  Process tasks forever
     while (true) {
         qDebug() << "Zpayload WHILE : " << m_port;
@@ -578,6 +580,15 @@ Zeromq::~Zeromq()
 Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 {
     qDebug() << "Zeromq::construct";
+    StringToEnumMap enumToWorker;
+
+    enumToWorker.insert(QString("service"), WSERVICE);
+    enumToWorker.insert(QString("process"), WPROCESS);
+
+    qRegisterMetaType<bson::bo>("bson::bo");
+    qRegisterMetaType<string>("string");
+    qRegisterMetaType<ncw_params>("ncw_params");
+
 
     if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
         qFatal("Couldn't create HUP socketpair");
@@ -593,11 +604,16 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     m_context = new zmq::context_t(1);
 
 
+
+
+
+    /*********** TRACKER ***********/
     QThread *thread_tracker = new QThread;
     tracker = new Ztracker(m_context, m_ncw.ncs_ip, m_ncw.ncs_port);
     connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
     tracker->moveToThread(thread_tracker);
     thread_tracker->start();
+    /*********** TRACKER ***********/
 
 
 
@@ -626,24 +642,53 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     //connect(tracker, SIGNAL(worker_port(QString, QString)), stream, SLOT(init_payload(QString, QString)));
     /*********** STREAM ***********/
 
+
+
+
+
+    switch (enumToWorker[a_ncw.worker_type])
+    {
+    case WSERVICE:
+        qDebug() << "WSERVICE : " << a_ncw.worker_type ;
+
+        ncw_service = new Service(a_ncw);
+        connect(payload, SIGNAL(payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+        connect(payload, SIGNAL(emit_pubsub(string)), ncw_service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
+
+        connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)));
+        connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)));
+        connect(ncw_service, SIGNAL(get_stream(bson::bo)), stream, SLOT(get_stream(bson::bo)), Qt::BlockingQueuedConnection);
+
+        connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
+
+        ncw_service->init();
+        break;
+
+    case WPROCESS:
+        qDebug() << "WPROCESS : " << a_ncw.worker_type ;
+
+        ncw_process = new Process(a_ncw);
+        connect(payload, SIGNAL(payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+
+        connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)));
+        connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)));
+
+
+        //connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_process, SLOT(init(ncw_params)), Qt::QueuedConnection);
+
+        ncw_process->init();
+        break;
+
+    default:
+        qDebug() << "worker unknown : " << a_ncw.worker_type ;
+        qApp->exit (1);
+    }
+
+
+
+
 }
 
-
-
-
-void Zeromq::payloader()
-{
-
-    QThread *thread_payload = new QThread;
-    //payload = new Zpayload(m_context, m_host, m_port);
-
-    payload = new Zpayload(m_context, m_ncw);
-    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
-    payload->moveToThread(thread_payload);
-    thread_payload->start();
-
-    connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
-}
 
 
 void Zeromq::hupSignalHandler(int)

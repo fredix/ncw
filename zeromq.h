@@ -36,11 +36,19 @@
 #include "mongo/client/dbclient.h"
 #include "mongo/bson/bson.h"
 
+#include "service.h"
+#include "process.h"
 #include "ncw_global.h"
 
 using namespace mongo;
 using namespace bson;
 
+
+enum WorkerType {
+    WSERVICE=1,
+    WPROCESS=2
+};
+typedef QMap<QString, WorkerType> StringToEnumMap;
 
 class Zstream : public QObject
 {
@@ -118,10 +126,12 @@ private:
     QString m_uuid;
     QString m_node_uuid;
     QString m_node_password;
+    ncw_params m_ncw;
 
 signals:    
     void payload(bson::bo data);
     void emit_pubsub(string data);
+    void emit_launch_worker(ncw_params);
 
 public slots:    
     void init_payload(QString worker_port, QString worker_uuid);
@@ -137,7 +147,6 @@ class Zeromq : public QObject
 public:
     Zeromq(ncw_params ncw);
     ~Zeromq();
-    void payloader();
 
     Ztracker *tracker;
     Zpayload *payload;
@@ -154,6 +163,9 @@ public slots:
     void handleSigTerm();
 
 private:
+    Process *ncw_process;
+    Service *ncw_service;
+
     QMutex *m_port_mutex;
     zmq::context_t *m_context;
     ncw_params m_ncw;
