@@ -23,6 +23,7 @@
 Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 {
     qDebug() << "Service::Service constructer";
+    service_is_up =  false;
     child_process = new QProcess();
 
     m_mutex = new QMutex;
@@ -72,6 +73,8 @@ void Service::init()
 
 void Service::launch()
 {
+    if (service_is_up == true) return;
+
     QDateTime timestamp = QDateTime::currentDateTime();
 
     m_child_exec = m_ncw.child_exec;
@@ -95,6 +98,8 @@ void Service::launch()
 
 
     qDebug() << "PID : " << child_process->pid();
+
+    service_is_up = true;
 }
 
 

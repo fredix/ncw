@@ -340,6 +340,9 @@ void Zpayload::pubsub_payload()
     check_pubsub_payload->setEnabled(false);
 
     qDebug() << "Zpayload::pubsub_payload";
+    // When the pub sub socket is ready launch worker
+    emit emit_launch_worker(m_ncw);
+
 
     qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
@@ -469,23 +472,6 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     check_pubsub_payload = new QSocketNotifier(pubsub_payload_socket_fd, QSocketNotifier::Read, this);
     connect(check_pubsub_payload, SIGNAL(activated(int)), this, SLOT(pubsub_payload()), Qt::DirectConnection);
     /******************************************/
-
-
-    emit emit_launch_worker(m_ncw);
-
-    /*  Process tasks forever
-    while (true) {
-        qDebug() << "Zpayload WHILE : " << m_port;
-        zmq::message_t message;
-        m_receiver->recv(&message);
-
-        //std::cout << "Received request: [" << (char*) message.data() << "]" << std::endl;
-
-        bo l_payload = bo((char*)message.data());
-
-        emit payload(l_payload);
-    }*/
-
 }
 
 

@@ -30,6 +30,8 @@ public:
     Service(ncw_params a_ncw);
     ~Service();
     void init();
+    bool service_is_up;
+
 
 private:
     QMutex *m_mutex;
@@ -41,6 +43,7 @@ private:
     QString m_node_uuid;
     QString m_node_password;
     ncw_params m_ncw;
+
 
 
 private slots:
