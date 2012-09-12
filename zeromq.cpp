@@ -643,23 +643,23 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     /*********** STREAM ***********/
 
 
-
-
-
     switch (enumToWorker[a_ncw.worker_type])
     {
     case WSERVICE:
         qDebug() << "WSERVICE : " << a_ncw.worker_type ;
 
         ncw_service = new Service(a_ncw);
+
         connect(payload, SIGNAL(payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
         connect(payload, SIGNAL(emit_pubsub(string)), ncw_service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
 
-        connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)));
-        connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)));
+        connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
+        connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(get_stream(bson::bo)), stream, SLOT(get_stream(bson::bo)), Qt::BlockingQueuedConnection);
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
+
+
 
         ncw_service->init();
         break;
@@ -668,10 +668,11 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
         qDebug() << "WPROCESS : " << a_ncw.worker_type ;
 
         ncw_process = new Process(a_ncw);
+
         connect(payload, SIGNAL(payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
 
-        connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)));
-        connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)));
+        connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
+        connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
 
 
         //connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_process, SLOT(init(ncw_params)), Qt::QueuedConnection);
