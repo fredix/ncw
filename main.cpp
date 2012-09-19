@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     options.alias("exec", "ex");
 
 
-    options.add("stdout", "catch the stdout (default is true)", QxtCommandOptions::Optional);
+    options.add("stdout", "catch the stdout (default is false)", QxtCommandOptions::Optional);
     options.alias("stdout", "stdout");
 
 
