@@ -94,8 +94,8 @@ void Service::launch()
         qApp->exit();
     }
 
-
-    connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
+    if (m_ncw.stdout)
+        connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
 
 
     qDebug() << "PID : " << child_process->pid();

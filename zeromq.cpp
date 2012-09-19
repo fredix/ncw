@@ -340,14 +340,12 @@ void Zpayload::pubsub_payload()
     check_pubsub_payload->setEnabled(false);
 
     qDebug() << "Zpayload::pubsub_payload";
-
-/*
+    /*
     qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
     m_socket_pubsub->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
-*/
+    */
     zmq::poll (&m_items[0], 2, 0);
-
 
     //if (events & ZMQ_POLLIN)
     if (m_items[1].revents & ZMQ_POLLIN)
@@ -517,19 +515,17 @@ void Zpayload::receive_payload()
 
     std::cout << "Zpayload::receive_payload" << std::endl;
 
-/*    qint32 events = 0;
+    /*
+    qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
-
     m_receiver->getsockopt(ZMQ_EVENTS, &events, &eventsSize);
-
     std::cout << "Zpayload::receive_payload ZMQ_EVENTS : " <<  events << std::endl;
+    */
 
-*/
     zmq::poll (&m_items[0], 2, 0);
 
 
     //if (events & ZMQ_POLLIN)
-
     if (m_items[0].revents & ZMQ_POLLIN)
     {
         std::cout << "Zpayload::receive_payload ZMQ_POLLIN" <<  std::endl;
@@ -661,7 +657,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
         ncw_service = new Service(a_ncw);
 
-        connect(payload, SIGNAL(payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+        connect(payload, SIGNAL(payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::BlockingQueuedConnection);
         connect(payload, SIGNAL(emit_pubsub(string)), ncw_service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);

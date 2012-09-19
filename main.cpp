@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
     bool verbose;
 
     ncw_params ncw;
+    ncw.stdout=false;
 
 
     QCoreApplication nodecast_worker(argc, argv);
@@ -105,6 +106,10 @@ int main(int argc, char *argv[])
 
     options.add("exec", "set the exec program to launch", QxtCommandOptions::Required);
     options.alias("exec", "ex");
+
+
+    options.add("stdout", "catch the stdout (default is true)", QxtCommandOptions::Optional);
+    options.alias("stdout", "stdout");
 
 
     options.add("verbose", "show more information about the process; specify twice for more detail", QxtCommandOptions::AllowMultiple);
@@ -184,6 +189,12 @@ int main(int argc, char *argv[])
         options.showUsage();
         return -1;
     }
+
+
+    if(options.count("stdout")) {
+        ncw.stdout = options.value("stdout").toBool();
+    }
+
 
 
     //  s_catch_signals ();

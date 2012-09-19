@@ -4,7 +4,7 @@ INSTALL
 =======
 
 install deb :
-apt-get install libzmq-dev libboost-all-dev libqt4-dev
+apt-get install g++ make scons libzmq-dev libboost-all-dev libqt4-dev
 (if libzmq-dev (<= 2.2.x) is not packaged in your Linux distribution
 get it from http://www.zeromq.org/intro:get-the-software)
 

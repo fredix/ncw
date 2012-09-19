@@ -31,6 +31,7 @@ struct ncw_params {
     QString node_uuid;
     QString node_password;
     QString child_exec;
+    bool stdout;
 };
 
 
