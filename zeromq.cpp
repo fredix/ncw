@@ -316,6 +316,8 @@ Zpayload::~Zpayload()
 {
     std::cout << "Zpayload::Zpayload destruct" << std::endl;
     m_receiver->close();
+    m_socket_worker->close();
+    m_socket_pubsub->close();
 }
 
 
@@ -733,6 +735,7 @@ void Zeromq::handleSigHup()
 
     delete(tracker);
     delete(payload);
+    delete(stream);
     delete(m_context);
 
     snHup->setEnabled(true);
