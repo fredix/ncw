@@ -465,6 +465,10 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
     uint64_t pub_hwm = 50000;
     m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
+
+    int linger = 0;
+    m_socket_pubsub->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
+
     m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter1.data(), filter1.size());
     m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter2.data(), filter2.size());
     m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter3.data(), filter3.size());
