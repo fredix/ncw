@@ -80,7 +80,7 @@ void Zstream::get_stream(BSONObj payload)
     z_message->rebuild(payload.objsize());
     memcpy(z_message->data(), (char*)payload.objdata(), payload.objsize());
     z_receive->send(*z_message);
-    delete(z_message);
+    //delete(z_message);
 
     /* Get the reply.
     zmq::message_t reply;
@@ -234,7 +234,7 @@ void Ztracker::init()
     memcpy ((void *) z_message->data (), (char*)ping.objdata(), ping.objsize());
   //  std::cout << "Sending Hello " << request_nbr << "…" << std::endl;
     z_sender->send (*z_message);
-    delete(z_message);
+    //delete(z_message);
 
     // Get the reply.
     zmq::message_t reply;
@@ -286,7 +286,7 @@ void Ztracker::push_tracker(bson::bo payload)
     z_message->rebuild(l_payload.objsize());
     memcpy(z_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
     z_sender->send(*z_message);
-    delete(z_message);
+    //delete(z_message);
     /************************/
 
     // Get the reply.
@@ -511,7 +511,7 @@ void Zpayload::push_payload(BSONObj data)
     m_message->rebuild(l_payload.objsize());
     memcpy(m_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
     m_socket_worker->send(*m_message);
-    delete(m_message);
+    //delete(m_message);
     /************************/
 }
 
