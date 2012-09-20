@@ -212,6 +212,10 @@ Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : 
 
     uint64_t hwm = 50000;
     z_sender->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+
+
+    //int linger = 0;
+    //z_sender->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
 }
 
 
@@ -334,6 +338,11 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
     m_socket_worker = new zmq::socket_t (*m_context, ZMQ_PUSH);
     uint64_t hwm = 50000;
     m_socket_worker->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+
+    //int linger = 0;
+    //m_socket_worker->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
+
+
     m_socket_worker->connect(t_connection_string.constData());
 
 
@@ -466,8 +475,8 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     uint64_t pub_hwm = 50000;
     m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
 
-    int linger = 0;
-    m_socket_pubsub->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
+    //int linger = 0;
+    //m_socket_pubsub->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
 
     m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter1.data(), filter1.size());
     m_socket_pubsub->setsockopt(ZMQ_SUBSCRIBE, filter2.data(), filter2.size());
