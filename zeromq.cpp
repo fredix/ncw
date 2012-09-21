@@ -112,6 +112,8 @@ void Zstream::stream_payload()
 
 
         while (true) {
+            flus_socket:
+
             zmq::message_t request;
 
             bool res = z_receive->recv (&request, ZMQ_NOBLOCK);
@@ -367,6 +369,8 @@ void Zpayload::pubsub_payload()
         std::cout << "Zpayload::pubsub_payload ZMQ_POLLIN" <<  std::endl;
 
         while (true) {
+            flush_socket:
+
             zmq::message_t request;
 
             bool res = m_socket_pubsub->recv (&request, ZMQ_NOBLOCK);
@@ -378,7 +382,7 @@ void Zpayload::pubsub_payload()
             char *payload = (char*) request.data();
             if (strlen(payload) == 0) {
                 std::cout << "Zpayload::pubsub_payload STRLEN received request 0" << std::endl;
-                break;
+                goto flush_socket;
             }
 
             QString raw_data = QString::fromAscii(payload);
@@ -551,6 +555,8 @@ void Zpayload::receive_payload()
 
         while (true)
         {
+            flush_socket:
+
             zmq::message_t request;
             bool res = m_receiver->recv(&request, ZMQ_NOBLOCK);
             if (!res && zmq_errno () == EAGAIN) break;
@@ -560,7 +566,7 @@ void Zpayload::receive_payload()
             char *plop = (char*) request.data();
             if (strlen(plop) == 0) {
                 std::cout << "Zpayload::worker_response STRLEN received request 0" << std::endl;
-                break;
+                goto flush_socket;
             }
 
 
@@ -586,7 +592,7 @@ void Zpayload::receive_payload()
             {
                 std::cout << "error on data : " << data << std::endl;
                 std::cout << "error on data BSON : " << e.what() << std::endl;
-                break;
+                goto flush_socket;
             }
         }
 
