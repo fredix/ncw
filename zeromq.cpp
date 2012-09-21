@@ -564,7 +564,7 @@ void Zpayload::receive_payload()
             char *plop = (char*) request.data();
             if (strlen(plop) == 0) {
                 std::cout << "Zpayload::worker_response STRLEN received request 0" << std::endl;
-                goto flush_socket;
+                break;
             }
 
 
