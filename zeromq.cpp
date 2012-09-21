@@ -369,8 +369,6 @@ void Zpayload::pubsub_payload()
         std::cout << "Zpayload::pubsub_payload ZMQ_POLLIN" <<  std::endl;
 
         while (true) {
-            flush_socket:
-
             zmq::message_t request;
 
             bool res = m_socket_pubsub->recv (&request, ZMQ_NOBLOCK);
@@ -382,7 +380,7 @@ void Zpayload::pubsub_payload()
             char *payload = (char*) request.data();
             if (strlen(payload) == 0) {
                 std::cout << "Zpayload::pubsub_payload STRLEN received request 0" << std::endl;
-                goto flush_socket;
+                break;
             }
 
             QString raw_data = QString::fromAscii(payload);
