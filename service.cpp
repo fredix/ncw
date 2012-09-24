@@ -48,7 +48,7 @@ void Service::init()
     m_node_uuid = m_ncw.node_uuid;
     m_node_password = m_ncw.node_password;
 
-    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
 
 /*    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;

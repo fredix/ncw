@@ -112,8 +112,6 @@ void Zstream::stream_payload()
 
 
         while (true) {
-            flus_socket:
-
             zmq::message_t request;
 
             bool res = z_receive->recv (&request, ZMQ_NOBLOCK);
