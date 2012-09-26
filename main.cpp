@@ -22,7 +22,6 @@
 #include <QtCore/QCoreApplication>
 #include "main.h"
 
-QSettings settings("nodecast", "ncw");
 
 
 /*
@@ -118,12 +117,28 @@ int main(int argc, char *argv[])
     options.alias("verbose", "v");
     options.add("help", "show this help text");
     options.alias("help", "h");
-    options.parse(QCoreApplication::arguments());
+    options.parse(QCoreApplication::arguments());               
+
     if(options.count("help") || options.showUnrecognizedWarning()) {
         options.showUsage();
         return -1;
     }
     verbose = options.count("verbose");
+
+    if(options.count("worker-name")) {
+        ncw.worker_name = options.value("worker-name").toString();
+
+    }
+    else {
+        std::cout << "ncw: --worker-name requires a parameter" << std::endl;
+        options.showUsage();
+        return -1;
+    }
+
+
+    QSettings settings("nodecast", "ncw_" + ncw.worker_name);
+
+
 
     if(options.count("worker-type")) {
         ncw.worker_type = options.value("worker-type").toString();        
@@ -145,14 +160,6 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if(options.count("worker-name")) {
-        ncw.worker_name = options.value("worker-name").toString();
-        settings.setValue("worker-name", ncw.worker_name);
-    }
-    else if(settings.contains("worker-name"))
-    {
-        ncw.worker_name = settings.value("worker_name").toString();
-    }
 
     if(options.count("ncs-port")) {
         ncw.ncs_port = options.value("ncs-port").toString();
