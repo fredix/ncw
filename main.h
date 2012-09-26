@@ -26,6 +26,7 @@
 #include <signal.h>
 
 #include <QDebug>
+#include <QSettings>
 //#include <QDomDocument>
 #include <QxtCore/QxtCommandOptions>
 

@@ -22,6 +22,8 @@
 #include <QtCore/QCoreApplication>
 #include "main.h"
 
+QSettings settings("nodecast", "ncw");
+
 
 /*
 static int s_interrupted = 0;
@@ -124,13 +126,18 @@ int main(int argc, char *argv[])
     verbose = options.count("verbose");
 
     if(options.count("worker-type")) {
-        ncw.worker_type = options.value("worker-type").toString();
+        ncw.worker_type = options.value("worker-type").toString();        
         if (ncw.worker_type != "service" && ncw.worker_type != "process")
         {
             std::cout << "ncw: --worker-type accept only process or service" << std::endl;
             options.showUsage();
             return -1;
         }
+        settings.setValue("worker-type", ncw.worker_type);
+    }
+    else if(settings.contains("worker-type"))
+    {
+        ncw.worker_type = settings.value("worker-type").toString();
     }
     else {
         std::cout << "ncw: --worker-type requires a parameter" << std::endl;
@@ -140,11 +147,20 @@ int main(int argc, char *argv[])
 
     if(options.count("worker-name")) {
         ncw.worker_name = options.value("worker-name").toString();
+        settings.setValue("worker-name", ncw.worker_name);
     }
-
+    else if(settings.contains("worker-name"))
+    {
+        ncw.worker_name = settings.value("worker_name").toString();
+    }
 
     if(options.count("ncs-port")) {
         ncw.ncs_port = options.value("ncs-port").toString();
+        settings.setValue("ncs-port", ncw.ncs_port);
+    }
+    else if(settings.contains("ncs-port"))
+    {
+        ncw.ncs_port = settings.value("ncs-port").toString();
     }
     else {
         std::cout << "ncw: --ncs-port requires a parameter" << std::endl;
@@ -155,6 +171,11 @@ int main(int argc, char *argv[])
 
     if(options.count("ncs-ip")) {
         ncw.ncs_ip = options.value("ncs-ip").toString();
+        settings.setValue("ncs-ip", ncw.ncs_ip);
+    }
+    else if(settings.contains("ncs-ip"))
+    {
+        ncw.ncs_ip = settings.value("ncs-ip").toString();
     }
     else {
         std::cout << "ncw: --ncs-ip requires a parameter" << std::endl;
@@ -164,6 +185,11 @@ int main(int argc, char *argv[])
 
     if(options.count("node-uuid")) {
         ncw.node_uuid = options.value("node-uuid").toString();
+        settings.setValue("node-uuid", ncw.node_uuid);
+    }
+    else if(settings.contains("node-uuid"))
+    {
+        ncw.node_uuid = settings.value("node-uuid").toString();
     }
     else {
         std::cout << "ncw: --node-uuid requires a parameter" << std::endl;
@@ -173,6 +199,11 @@ int main(int argc, char *argv[])
 
     if(options.count("node-password")) {
         ncw.node_password = options.value("node-password").toString();
+        settings.setValue("node-password", ncw.node_password);
+    }
+    else if(settings.contains("node-password"))
+    {
+        ncw.node_password = settings.value("node-password").toString();
     }
     else {
         std::cout << "ncw: --node-password requires a parameter" << std::endl;
@@ -183,6 +214,11 @@ int main(int argc, char *argv[])
 
     if(options.count("exec")) {
         ncw.child_exec = options.value("exec").toString();
+        settings.setValue("exec", ncw.child_exec);
+    }
+    else if(settings.contains("exec"))
+    {
+        ncw.child_exec = settings.value("exec").toString();
     }
     else {
         std::cout << "ncw: --exec requires a parameter" << std::endl;
@@ -193,7 +229,13 @@ int main(int argc, char *argv[])
 
     if(options.count("stdout")) {
         ncw.stdout = options.value("stdout").toBool();
+        settings.setValue("stdout", ncw.stdout);
     }
+    else if(settings.contains("stdout"))
+    {
+        ncw.stdout = settings.value("stdout").toBool();
+    }
+
 
 
 
