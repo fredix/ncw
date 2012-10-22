@@ -256,6 +256,10 @@ int main(int argc, char *argv[])
     thread_interrupt->start();
 */
 
+
+    if (!QDir("/tmp/nodecast").exists()) QDir().mkdir("/tmp/nodecast");
+
+
     setup_unix_signal_handlers();
 
 

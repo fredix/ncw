@@ -53,7 +53,12 @@ curl -H "X-workflow: test" -d '{ "ls": 1, "rm": 2 }' --user "user@email.com:toke
 return a workflow : {"uuid":"0ebcdab6-0263-42d3-be7d-9602fa15f68c"}
 
 3. push data
-curl -H "X-node-uuid: 2d0a7780-e8fe-4e0a-89c6-a5a2737b095a" -H "X-node-password: 2d0a7780-e8fe-4e0a-89c6-a5a2737b095a" -H "X-workflow-uuid: 0ebcdab6-0263-42d3-be7d-9602fa15f68c" -H "X-payloadfilename: filename" -X POST --data-binary @filename http://127.0.0.1:4567/payload/create
+## PUSH TO ONE WORKER
+curl -H "X-node-uuid: 76e11acd-206e-4eef-9aa3-7e39b931cbfc" -H "X-node-password: 75d123bd-c912-43fc-acfe-dcb7642a9921" -H "X-payload-filename: myfilename" -H "X-payload-type: mydata" -X POST --data-binary @myfilename http://127.0.0.1:4567/payload/push/7faf07e7-51b6-4468-b666-57fd622ed4cd
+
+## PUBLISH TO ALL SAME WORKER TYPE
+curl -H "X-node-uuid: 76e11acd-206e-4eef-9aa3-7e39b931cbfc" -H "X-node-password: 75d123bd-c912-43fc-acfe-dcb7642a9921" -H "X-payload-filename: myfilename" -H "X-payload-type: mydata" -X POST --data-binary @myfilename http://127.0.0.1:4567/payload/publish/7faf07e7-51b6-4468-b666-57fd622ed4cd
+
 return a session uuid : {"uuid":"7b32b9d0-3ea9-4663-9577-4b34192055bf"}
 
 

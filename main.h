@@ -27,7 +27,7 @@
 
 #include <QDebug>
 #include <QSettings>
-//#include <QDomDocument>
+#include <QDir>
 #include <QxtCore/QxtCommandOptions>
 
 #include "zeromq.h"
