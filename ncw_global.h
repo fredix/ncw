@@ -30,6 +30,7 @@ struct ncw_params {
     QString worker_type;
     QString node_uuid;
     QString node_password;
+    QString directory;
     QString child_exec;
     bool stdout;
 };

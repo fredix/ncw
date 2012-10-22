@@ -28,7 +28,7 @@ int Zeromq::sigtermFd[2]={};
 
 
 
-Zstream::Zstream(zmq::context_t *a_context, QString a_host) : m_context(a_context), m_host(a_host)
+Zstream::Zstream(zmq::context_t *a_context, QString a_host,  QString a_directory) : m_context(a_context), m_host(a_host), m_directory(a_directory)
 {
     m_mutex = new QMutex();
 
@@ -104,7 +104,7 @@ void Zstream::get_stream(BSONObj payload, string filename)
     string filename = r_payload.getField("filename").str();
     */
 
-    QString path = "/tmp/nodecast/" + QString::fromStdString(filename);
+    QString path = m_directory + "/" + QString::fromStdString(filename);
     //path.append(filename.c_str());
 
 
@@ -835,7 +835,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     QThread *thread_stream = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    stream = new Zstream(m_context, m_ncw.ncs_ip);
+    stream = new Zstream(m_context, m_ncw.ncs_ip, m_ncw.directory);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     stream->moveToThread(thread_stream);
     thread_stream->start();

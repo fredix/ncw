@@ -54,7 +54,7 @@ class Zstream : public QObject
 {
     Q_OBJECT
 public:
-    Zstream(zmq::context_t *a_context, QString a_host);
+    Zstream(zmq::context_t *a_context, QString a_host, QString a_directory);
     ~Zstream();
 
 private:
@@ -66,6 +66,7 @@ private:
     QFile *data_stream;
 
     QString m_host;
+    QString m_directory;
     QString m_uuid;
 
 private slots:

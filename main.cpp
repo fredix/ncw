@@ -105,6 +105,10 @@ int main(int argc, char *argv[])
     options.add("node-password", "set the node password", QxtCommandOptions::Required);
 
 
+    options.add("directory", "set the data directory", QxtCommandOptions::Optional);
+    options.alias("directory", "dir");
+
+
     options.add("exec", "set the exec program to launch", QxtCommandOptions::Required);
     options.alias("exec", "ex");
 
@@ -219,6 +223,23 @@ int main(int argc, char *argv[])
     }
 
 
+
+    if(options.count("directory")) {
+        ncw.directory = options.value("directory").toString();
+        settings.setValue("directory", ncw.directory);
+    }
+    else if(settings.contains("directory"))
+    {
+        ncw.directory = settings.value("directory").toString();
+    }
+    else {
+        if (!QDir("/tmp/nodecast").exists()) QDir().mkdir("/tmp/nodecast");
+        ncw.directory = "/tmp/nodecast";
+    }
+
+
+
+
     if(options.count("exec")) {
         ncw.child_exec = options.value("exec").toString();
         settings.setValue("exec", ncw.child_exec);
@@ -257,7 +278,6 @@ int main(int argc, char *argv[])
 */
 
 
-    if (!QDir("/tmp/nodecast").exists()) QDir().mkdir("/tmp/nodecast");
 
 
     setup_unix_signal_handlers();
