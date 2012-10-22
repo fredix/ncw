@@ -855,7 +855,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), stream, SLOT(get_stream(bson::bo, string)), Qt::BlockingQueuedConnection);
+        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), stream, SLOT(get_stream(bson::bo, string)), Qt::QueuedConnection);
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
