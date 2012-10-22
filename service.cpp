@@ -123,6 +123,9 @@ void Service::get_pubsub(string data)
 {
     std::cout << "Service::get_pubsub data : " << data << std::endl;
 
+    QDateTime timestamp = QDateTime::currentDateTime();
+
+
     QString payload = QString::fromStdString(data);
     QRegExp filter("([^@]*@).*");
 
@@ -135,21 +138,91 @@ void Service::get_pubsub(string data)
 
     qDebug() << "PAYLOAD : " << payload;
 
-    //child_process->write(data.toString().data());
-    child_process->write(payload.toAscii());
-    child_process->write("\n");
-    //child_process->waitForBytesWritten(100000);
+
+    BSONObj l_data;
+    try {
+        //l_data = BSONObj((char*)payload.data());
+
+        l_data = mongo::fromjson(payload.toAscii());
+
+        if (l_data.isValid() && !l_data.isEmpty())
+        {
+            std::cout << "Service::get_pubsub : " << l_data  << std::endl;
+
+
+            BSONElement session_uuid = l_data.getField("session_uuid");
+            m_session_uuid = QString::fromStdString(session_uuid.str());
+
+
+
+
+
+            if (l_data.hasField("command"))
+            {
+                string command = l_data.getField("command").str();
+                std::cout << "COMMAND : " << command << std::endl;
+
+                BSONObjBuilder b_datas;
+
+                b_datas << "type" << "service";
+                b_datas << "session_uuid" << m_session_uuid.toStdString();
+                b_datas << "node_uuid" << m_node_uuid.toStdString();
+                b_datas << "node_password" << m_node_password.toStdString();
+                b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
+
+                BSONObj s_datas = b_datas.obj();
+                std::cout << "s_datas : " << s_datas << std::endl;
+
+
+
+                if (command.compare("get_file") == 0)
+                {
+                    string filename = l_data.getField("filename").str();
+
+                    std::cout << "Service::s_job_receive filename : " << filename << std::endl;
+
+                    qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
+                    emit get_stream(s_datas, filename);
+                    qDebug() << "WORKER SERVICE AFTER EMIT get_file";
+                }
+
+            }
+            else
+            {
+                //child_process->write(data.toString().data());
+                child_process->write(payload.toAscii());
+                child_process->write("\n");
+                //child_process->waitForBytesWritten(100000);
+            }
+
+
+
+
+        }
+        else
+        {
+            std::cout << "DATA NO VALID :" << l_data << std::endl;
+        }
+
+    }
+    catch (mongo::MsgAssertionException &e)
+    {
+        std::cout << "error on data : " << l_data << std::endl;
+        std::cout << "error on data BSON : " << e.what() << std::endl;
+    }
+
+
 }
 
 
 void Service::s_job_receive(bson::bo data) {
 
-    qDebug() << "Service::s_job_receive";
+    std::cout << "Service::s_job_receive DATA : "  << data << std::endl;
     //m_mutex->lock();
 
-    BSONElement r_datas = data.getField("data");
-    BSONElement session_uuid = data.getField("session_uuid");
+    BSONElement session_uuid = data.getFieldDotted("payload.session_uuid");
     m_session_uuid = QString::fromStdString(session_uuid.str());
+    BSONElement action = data.getFieldDotted("payload.action");
     //data.getField("step_id").Obj().getObjectID(step_id);
 
     std::cout << "BE SESSION UUID " << session_uuid << std::endl;
@@ -172,15 +245,89 @@ void Service::s_job_receive(bson::bo data) {
     BSONObj tracker = b_tracker.obj();
     emit push_payload(tracker);
 
-    param.append(" ").append(QString::fromStdString(r_datas.str()));
+    qDebug() << "AFTER EMIT PUSH PAYLOAD";
+
+    if (action.str().compare("publish") == 0)
+    {
+
+        qDebug() << "PUBLISH !";
+
+        BSONObjBuilder b_datas;
+
+        b_datas << "action" << "publish";
+        qDebug() << "PUBLISH 1";
+
+        b_datas << "gridfs" << false;
+        qDebug() << "PUBLISH 2";
+        b_datas << "dest" <<  m_service_name.toStdString();
+        qDebug() << "PUBLISH 3";
+        b_datas << "data" << data.getField("payload");
+        qDebug() << "PUBLISH 4";
+        b_datas << "payload_type" << data.getFieldDotted("payload.payload_type");
+        qDebug() << "PUBLISH 5";
+        b_datas << "session_uuid" << m_session_uuid.toStdString();
+        qDebug() << "PUBLISH 6";
+        b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
+
+        BSONObj s_datas = b_datas.obj();
+        std::cout << "s_datas : " << s_datas << std::endl;
+
+        qDebug() << "WORKER SERVICE BEFORE CREATE PUBSUB PAYLOAD EMIT";
+        emit push_payload(s_datas);
+        qDebug() << "WORKER SERVICE AFTER CREATE PUBSUB PAYLOAD EMIT";
+        return;
+    }
 
 
-    QByteArray q_datas = r_datas.valuestr();
-    qDebug() << "!!!!   SEND PAYLOAD TO STDIN : " << q_datas;
+    if (data.getField("payload").Obj().hasField("command"))
+    {
+        string command = data.getFieldDotted("payload.command").str();
+        std::cout << "COMMAND : " << command << std::endl;
 
-    child_process->write(q_datas);
-    child_process->write("\n");
-    //child_process->waitForBytesWritten(100000);
+        BSONObjBuilder b_datas;
+
+        b_datas << "type" << "service";
+        b_datas << "session_uuid" << m_session_uuid.toStdString();
+        b_datas << "node_uuid" << m_node_uuid.toStdString();
+        b_datas << "node_password" << m_node_password.toStdString();
+        b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
+
+        BSONObj s_datas = b_datas.obj();
+        std::cout << "s_datas : " << s_datas << std::endl;
+
+
+
+        if (command.compare("get_file") == 0)
+        {
+            string filename = data.getFieldDotted("payload.filename").str();
+
+            std::cout << "Service::s_job_receive filename : " << filename << std::endl;
+
+            qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
+            emit get_stream(s_datas, filename);
+            qDebug() << "WORKER SERVICE AFTER EMIT get_file";
+        }
+
+
+
+
+    }
+    else if (data.getField("payload").Obj().hasField("data"))
+    {
+        BSONElement r_datas = data.getFieldDotted("payload.data");
+
+        param.append(" ").append(QString::fromStdString(r_datas.str()));
+
+        QByteArray q_datas = r_datas.valuestr();
+        qDebug() << "!!!!   SEND PAYLOAD TO STDIN : " << q_datas;
+
+        child_process->write(q_datas);
+        child_process->write("\n");
+        //child_process->waitForBytesWritten(100000);
+    }
+
+
+
 }
 
 
@@ -212,6 +359,7 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
             return;
         }
+        /*
         else if (!m_session_uuid.isEmpty() && b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
         {
             qDebug() << "WORKER SERVICE BEFORE GET FILE PAYLOAD EMIT";
@@ -220,7 +368,7 @@ void Service::readyReadStandardOutput()
             b_datas << "session_uuid" << m_session_uuid.toStdString();
             b_datas << "node_uuid" << m_node_uuid.toStdString();
             b_datas << "node_password" << m_node_password.toStdString();
-            b_datas << "name" << m_service_name.toStdString() << "action" << "get_file" << "timestamp" << timestamp.toTime_t();
+            b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
 
             BSONObj s_datas = b_datas.obj();
             std::cout << "s_datas : " << s_datas << std::endl;
@@ -230,7 +378,7 @@ void Service::readyReadStandardOutput()
             emit get_stream(s_datas);
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
             return;
-        }
+        }*/
         else if (!m_session_uuid.isEmpty())
         {
             b_datas << "type" << "service";

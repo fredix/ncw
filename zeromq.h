@@ -69,8 +69,9 @@ private:
     QString m_uuid;
 
 private slots:
-    void get_stream(bson::bo payload);
+    void get_stream(bson::bo payload, string filename);
     void stream_payload();
+    void stream_payload2();
 };
 
 
