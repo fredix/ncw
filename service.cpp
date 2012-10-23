@@ -255,18 +255,11 @@ void Service::s_job_receive(bson::bo data) {
         BSONObjBuilder b_datas;
 
         b_datas << "action" << "publish";
-        qDebug() << "PUBLISH 1";
-
         b_datas << "gridfs" << false;
-        qDebug() << "PUBLISH 2";
         b_datas << "dest" <<  m_service_name.toStdString();
-        qDebug() << "PUBLISH 3";
         b_datas << "data" << data.getField("payload");
-        qDebug() << "PUBLISH 4";
         b_datas << "payload_type" << data.getFieldDotted("payload.payload_type");
-        qDebug() << "PUBLISH 5";
         b_datas << "session_uuid" << m_session_uuid.toStdString();
-        qDebug() << "PUBLISH 6";
         b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
 
         BSONObj s_datas = b_datas.obj();
@@ -348,7 +341,7 @@ void Service::readyReadStandardOutput()
 
     try {
         b_out = mongo::fromjson(json.toAscii());
-        std::cout << "b_out : " << b_out << std::endl;
+        std::cout << "b_out : " << b_out.jsonString(Strict) << std::endl;
 
         if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0                                      
                                          || b_out.getField("action").str().compare("publish") == 0
@@ -404,7 +397,7 @@ void Service::readyReadStandardOutput()
     BSONObj s_datas = b_datas.obj();
     std::cout << "s_datas : " << s_datas << std::endl;
 
-    if (s_datas.isValid() && s_datas.objsize() > 0)
+    if (s_datas.isValid() && !s_datas.isEmpty())
     {
         qDebug() << "WORKER PROCESS BEFORE EMIT";
         emit push_payload(s_datas);
