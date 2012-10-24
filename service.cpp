@@ -247,18 +247,25 @@ void Service::s_job_receive(bson::bo data) {
 
     qDebug() << "AFTER EMIT PUSH PAYLOAD";
 
+
+    BSONObj raw_data = mongo::fromjson(data.getFieldDotted("payload.data").str());
+    std::cout << "Service::s_job_receive RAW DATA : " << raw_data << std::endl;
+
+
+
+
     if (action.str().compare("publish") == 0)
     {
 
-        qDebug() << "PUBLISH !";
+        qDebug() << "PUBLISH !";    
 
         BSONObjBuilder b_datas;
 
         b_datas << "action" << "publish";
         b_datas << "gridfs" << false;
         b_datas << "dest" <<  m_service_name.toStdString();
-        b_datas << "data" << data.getField("payload");
-        b_datas << "payload_type" << data.getFieldDotted("payload.payload_type");
+        b_datas << "data" << raw_data;
+        b_datas << "payload_type" << raw_data.getFieldDotted("payload_type");
         b_datas << "session_uuid" << m_session_uuid.toStdString();
         b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
 
