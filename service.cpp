@@ -341,7 +341,9 @@ void Service::readyReadStandardOutput()
 
     try {
         b_out = mongo::fromjson(json.toAscii());
-        std::cout << "b_out : " << b_out.jsonString(Strict) << std::endl;
+
+
+        std::cout << "b_out : " << b_out << std::endl;
 
         if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0                                      
                                          || b_out.getField("action").str().compare("publish") == 0
