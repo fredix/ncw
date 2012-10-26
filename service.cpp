@@ -352,7 +352,7 @@ void Service::readyReadStandardOutput()
 
         std::cout << "b_out : " << b_out << std::endl;
 
-        if (b_out.hasField("action") && (b_out.getField("action").str().compare("create") == 0                                      
+        if (b_out.hasField("action") && (b_out.getField("action").str().compare("push") == 0
                                          || b_out.getField("action").str().compare("publish") == 0
                                          || b_out.getField("action").str().compare("replay") == 0))
         {
