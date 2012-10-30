@@ -361,26 +361,27 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
             return;
         }
-        /*
-        else if (!m_session_uuid.isEmpty() && b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
+        else if (b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
         {
             qDebug() << "WORKER SERVICE BEFORE GET FILE PAYLOAD EMIT";
 
+            BSONElement filename =  b_out.getField("filename");
+
             b_datas << "type" << "service";
-            b_datas << "session_uuid" << m_session_uuid.toStdString();
             b_datas << "node_uuid" << m_node_uuid.toStdString();
             b_datas << "node_password" << m_node_password.toStdString();
             b_datas << "name" << m_service_name.toStdString() << "timestamp" << timestamp.toTime_t();
+            b_datas << "filename" << filename.str();
 
             BSONObj s_datas = b_datas.obj();
             std::cout << "s_datas : " << s_datas << std::endl;
 
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD BEFORE EMIT";
 
-            emit get_stream(s_datas);
+            emit get_stream(s_datas, filename.str());
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
             return;
-        }*/
+        }
         else if (!m_session_uuid.isEmpty())
         {
             b_datas << "type" << "service";
