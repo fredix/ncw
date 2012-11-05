@@ -391,6 +391,9 @@ void Service::readyReadStandardOutput()
 
             emit get_stream(s_datas, filename.str());
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
+
+            received_file(filename.str());
+
             return;
         }
         else if (!m_session_uuid.isEmpty())

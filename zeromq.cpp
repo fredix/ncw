@@ -170,7 +170,7 @@ void Zstream::get_stream(BSONObj payload, string filename)
     }
     out.close ();
 
-    emit received_file(filename);
+    //emit received_file(filename);
 
     m_mutex->unlock ();
 
@@ -857,8 +857,8 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), zstream, SLOT(get_stream(bson::bo, string)), Qt::QueuedConnection);
-        connect(zstream, SIGNAL(received_file(string)), ncw_service, SLOT(received_file(string)), Qt::BlockingQueuedConnection);
+        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), zstream, SLOT(get_stream(bson::bo, string)), Qt::BlockingQueuedConnection);
+        //connect(zstream, SIGNAL(received_file(string)), ncw_service, SLOT(received_file(string)), Qt::QueuedConnection);
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
