@@ -51,7 +51,7 @@ public slots:
      void launch();
      void s_job_receive(bson::bo data);
      void get_pubsub(string data);
-     void receive_file(string filename);
+     void received_file(string filename);
 };
 
 #endif // SERVICE_H

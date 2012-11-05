@@ -170,7 +170,7 @@ void Zstream::get_stream(BSONObj payload, string filename)
     }
     out.close ();
 
-    emit receive_file(filename);
+    emit received_file(filename);
 
     m_mutex->unlock ();
 
@@ -837,9 +837,9 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     QThread *thread_stream = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    stream = new Zstream(m_context, m_ncw.ncs_ip, m_ncw.directory);
+    zstream = new Zstream(m_context, m_ncw.ncs_ip, m_ncw.directory);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
-    stream->moveToThread(thread_stream);
+    zstream->moveToThread(thread_stream);
     thread_stream->start();
     //connect(tracker, SIGNAL(worker_port(QString, QString)), stream, SLOT(init_payload(QString, QString)));
     /*********** STREAM ***********/
@@ -857,12 +857,12 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), stream, SLOT(get_stream(bson::bo, string)), Qt::QueuedConnection);
+        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), zstream, SLOT(get_stream(bson::bo, string)), Qt::QueuedConnection);
+        connect(zstream, SIGNAL(received_file(string)), ncw_service, SLOT(received_file(string)), Qt::BlockingQueuedConnection);
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
 
-        connect(stream, SIGNAL(receive_file(string)), ncw_service, SLOT(receive_file(string)), Qt::QueuedConnection);
 
         ncw_service->init();
         break;
@@ -929,7 +929,7 @@ void Zeromq::handleSigHup()
 
     delete(tracker);
     delete(payload);
-    delete(stream);
+    delete(zstream);
     delete(m_context);
 
     snHup->setEnabled(true);

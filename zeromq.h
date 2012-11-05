@@ -59,7 +59,7 @@ public:
 
 
 signals:
-    void receive_file(string filename);
+    void received_file(string filename);
 
 private:
     QSocketNotifier *check_stream;
@@ -157,7 +157,7 @@ public:
 
     Ztracker *tracker;
     Zpayload *payload;
-    Zstream *stream;
+    Zstream *zstream;
 
     // Unix signal handlers.
     static void hupSignalHandler(int unused);
