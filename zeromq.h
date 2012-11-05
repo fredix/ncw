@@ -58,9 +58,6 @@ public:
     ~Zstream();
 
 
-signals:
-    void received_file(string filename);
-
 private:
     QSocketNotifier *check_stream;
     zmq::context_t *m_context;

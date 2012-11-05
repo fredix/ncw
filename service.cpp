@@ -393,7 +393,6 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
 
             received_file(filename.str());
-
             return;
         }
         else if (!m_session_uuid.isEmpty())

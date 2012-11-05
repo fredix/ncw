@@ -32,6 +32,8 @@ public:
     void init();
 
 private:
+    void received_file(string filename);
+
     QMutex *m_mutex;
     QTimer *timer;
     QProcess *child_process;
@@ -51,7 +53,6 @@ public slots:
      void launch();
      void s_job_receive(bson::bo data);
      void get_pubsub(string data);
-     void received_file(string filename);
 };
 
 #endif // SERVICE_H
