@@ -330,6 +330,15 @@ void Service::s_job_receive(bson::bo data) {
 
 }
 
+void Service::receive_file(string filename)
+{
+    QString json = "{\"receive_file\": \"";
+    json.append(filename.c_str());
+    json.append("\"}");
+    child_process->write(json.toAscii());
+    child_process->write("\n");
+}
+
 
 
 void Service::readyReadStandardOutput()

@@ -170,6 +170,8 @@ void Zstream::get_stream(BSONObj payload, string filename)
     }
     out.close ();
 
+    emit receive_file(filename);
+
     m_mutex->unlock ();
 
     //delete(z_message);
@@ -860,6 +862,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
 
+        connect(stream, SIGNAL(receive_file(string)), ncw_service, SLOT(receive_file(string)), Qt::QueuedConnection);
 
         ncw_service->init();
         break;
