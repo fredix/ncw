@@ -404,7 +404,7 @@ void Service::readyReadStandardOutput()
 
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD BEFORE EMIT";
 
-            bool status;
+            bool status = true;
             emit get_stream(s_datas, filename.str(), &status);
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
 

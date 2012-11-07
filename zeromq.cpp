@@ -181,12 +181,11 @@ void Zstream::get_stream(BSONObj payload, string filename, bool *status)
         data.clear();
 
 
-        //if (!(more & ZMQ_RCVMORE)) break;
+        if (!(more & ZMQ_RCVMORE)) break;
 
 
     }
-    out.close ();
-    *status = true;
+    out.close ();   
     m_mutex->unlock ();
 
     //delete(z_message);
