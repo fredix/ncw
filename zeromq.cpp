@@ -147,7 +147,7 @@ void Zstream::get_stream(BSONObj payload, string filename, bool *status)
                 QFile file(path);
                 file.open(QIODevice::WriteOnly);
                 file.remove();
-                status = new bool(false);
+                *status = false;
                 break;
             }
             catch (mongo::MsgAssertionException &e)
@@ -186,7 +186,7 @@ void Zstream::get_stream(BSONObj payload, string filename, bool *status)
 
     }
     out.close ();
-    status = new bool(true);
+    *status = true;
     m_mutex->unlock ();
 
     //delete(z_message);

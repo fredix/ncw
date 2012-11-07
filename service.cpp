@@ -182,8 +182,8 @@ void Service::get_pubsub(string data)
                     std::cout << "Service::s_job_receive filename : " << filename << std::endl;
 
                     qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
-                    bool *status;
-                    emit get_stream(s_datas, filename, status);
+                    bool status;
+                    emit get_stream(s_datas, filename, &status);
                     qDebug() << "WORKER SERVICE AFTER EMIT get_file";
                 }
 
@@ -305,8 +305,8 @@ void Service::s_job_receive(bson::bo data) {
             std::cout << "Service::s_job_receive filename : " << filename << std::endl;
 
             qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
-            bool *status;
-            emit get_stream(s_datas, filename, status);
+            bool status;
+            emit get_stream(s_datas, filename, &status);
             qDebug() << "WORKER SERVICE AFTER EMIT get_file";
         }
 
@@ -404,11 +404,11 @@ void Service::readyReadStandardOutput()
 
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD BEFORE EMIT";
 
-            bool *status;
-            emit get_stream(s_datas, filename.str(), status);
+            bool status;
+            emit get_stream(s_datas, filename.str(), &status);
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
 
-            received_file(filename.str(), *status);
+            received_file(filename.str(), status);
             return;
         }
         else if (!m_session_uuid.isEmpty())
