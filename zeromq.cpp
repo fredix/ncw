@@ -67,7 +67,7 @@ Zstream::~Zstream()
 }
 
 
-void Zstream::get_stream(BSONObj payload, string filename)
+void Zstream::get_stream(BSONObj payload, string filename, bool *status)
 {
     m_mutex->lock ();
     std::cout << "Zstream::get_stream, filename : " << filename << " payload : " << payload << std::endl;
@@ -137,8 +137,25 @@ void Zstream::get_stream(BSONObj payload, string filename)
         std::size_t more_size = sizeof(more);
         z_receive->getsockopt(ZMQ_RCVMORE, &more, &more_size);
 
-        //if (!(more & ZMQ_RCVMORE)) break;
-        //if (!more) break;
+        if (!(more & ZMQ_RCVMORE))
+        {
+            try {
+                BSONObj error_payload = bo((char*)request.data());
+                std::cout << "Zstream::get_stream ERROR : " << error_payload << std::endl;
+
+                out.close ();
+                QFile file(path);
+                file.open(QIODevice::WriteOnly);
+                file.remove();
+                status = new bool(false);
+                break;
+            }
+            catch (mongo::MsgAssertionException &e)
+            {
+                std::cout << "RECEIVE LAST CHUNK" << std::endl;
+            }
+        }
+
 
 
         //QByteArray data = QByteArray::fromBase64((char*) request.data());
@@ -164,11 +181,12 @@ void Zstream::get_stream(BSONObj payload, string filename)
         data.clear();
 
 
-        if (!(more & ZMQ_RCVMORE)) break;
+        //if (!(more & ZMQ_RCVMORE)) break;
 
 
     }
     out.close ();
+    status = new bool(true);
     m_mutex->unlock ();
 
     //delete(z_message);
@@ -854,7 +872,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(get_stream(bson::bo, string)), zstream, SLOT(get_stream(bson::bo, string)), Qt::BlockingQueuedConnection);
+        connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), zstream, SLOT(get_stream(bson::bo, string, bool*)), Qt::BlockingQueuedConnection);
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 

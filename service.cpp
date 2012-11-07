@@ -182,7 +182,8 @@ void Service::get_pubsub(string data)
                     std::cout << "Service::s_job_receive filename : " << filename << std::endl;
 
                     qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
-                    emit get_stream(s_datas, filename);
+                    bool *status;
+                    emit get_stream(s_datas, filename, status);
                     qDebug() << "WORKER SERVICE AFTER EMIT get_file";
                 }
 
@@ -304,7 +305,8 @@ void Service::s_job_receive(bson::bo data) {
             std::cout << "Service::s_job_receive filename : " << filename << std::endl;
 
             qDebug() << "WORKER SERVICE BEFORE EMIT get_file";
-            emit get_stream(s_datas, filename);
+            bool *status;
+            emit get_stream(s_datas, filename, status);
             qDebug() << "WORKER SERVICE AFTER EMIT get_file";
         }
 
@@ -330,15 +332,28 @@ void Service::s_job_receive(bson::bo data) {
 
 }
 
-void Service::received_file(string filename)
+void Service::received_file(string filename, bool status)
 {
-    QString json = "{\"received_file\": \"";
-    json.append(filename.c_str());
-    json.append("\"}");
-    child_process->write(json.toAscii());
-    child_process->write("\n");
+    if (status)
+    {
+        QString json = "{\"received_file\": \"";
+        json.append(filename.c_str());
+        json.append("\"}");
+        child_process->write(json.toAscii());
+        child_process->write("\n");
 
-    qDebug() << "RECEIVED FILE " << json;
+        qDebug() << "RECEIVED FILE " << json;
+    }
+    else
+    {
+        QString json = "{\"error\": \"";
+        json.append(filename.c_str());
+        json.append("\"}");
+        child_process->write(json.toAscii());
+        child_process->write("\n");
+
+        qDebug() << "ERROR ON RECEIVED FILE " << json;
+    }
 }
 
 
@@ -389,10 +404,11 @@ void Service::readyReadStandardOutput()
 
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD BEFORE EMIT";
 
-            emit get_stream(s_datas, filename.str());
+            bool *status;
+            emit get_stream(s_datas, filename.str(), status);
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
 
-            received_file(filename.str());
+            received_file(filename.str(), *status);
             return;
         }
         else if (!m_session_uuid.isEmpty())

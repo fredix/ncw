@@ -32,7 +32,7 @@ public:
     void init();
 
 private:
-    void received_file(string filename);
+    void received_file(string filename, bool status);
 
     QMutex *m_mutex;
     QTimer *timer;

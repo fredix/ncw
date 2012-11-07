@@ -55,7 +55,7 @@ private slots:
 signals:
     virtual void push_payload(bson::bo data);
     virtual void return_tracker(bson::bo data);
-    virtual void get_stream(bson::bo data, string filename);
+    virtual void get_stream(bson::bo data, string filename, bool *status);
 
 public slots:
     virtual void launch();
