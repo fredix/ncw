@@ -30,9 +30,9 @@
       <section id="main_content">
         <h3>Welcome to Nodecast agent worker.</h3>
 
-<p>NCW is an agent which is connected to <a href="http://nodecast.github.com/ncs/">NCS</a>. It is using Zeromq to communicatig and to monitoring.</p>
+<p>NCW is an agent which is connected to <a href="http://nodecast.github.com/ncs/">NCS</a>. It is using <a href="http://www.zeromq.org">Zeromq</a> for communicate and for monitoring.</p>
 
-<p>NCW fork your worker, so it send to STDIN the payloads received from NCS, also it catch the worker's response to STDOUT and send it to NCS.</p>
+<p>NCW fork your worker, so it send to STDIN the payloads received from NCS, also it get the worker's response to STDOUT and send it to NCS.</p>
 
 <h3>USAGE</h3>
 
@@ -47,19 +47,19 @@ $ curl -H "X-nodename: your-node-name" --user "email:token" http://ncs-ip:4567/n
 <p>curl return a node uuid :</p>
 
 <p>...
-{"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node_uuid":"2d0a7780-e8fe-4e0a-89c6-a5a2737b095a"}
+$ {"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node_uuid":"2d0a7780-e8fe-4e0a-89c6-a5a2737b095a"}
 ...</p>
 
 <ol>
 <li>create a workflow. Nodecast need a workflow before scheduling your task.</li>
 </ol><p>...
-curl -H "X-workflow: test" -d '{ "worker1": 1, "worker2": 2 }' --user "<a href="mailto:user@email.com">user@email.com</a>:token" <a href="http://127.0.0.1:4567/workflow/create">http://127.0.0.1:4567/workflow/create</a>
+$ curl -H "X-workflow: test" -d '{ "worker1": 1, "worker2": 2 }' --user "<a href="mailto:user@email.com">user@email.com</a>:token" <a href="http://127.0.0.1:4567/workflow/create">http://127.0.0.1:4567/workflow/create</a>
 ...</p>
 
 <p>return a workflow uuid : </p>
 
 <p>...
-{"uuid":"0ebcdab6-0263-42d3-be7d-9602fa15f68c"}
+$ {"uuid":"0ebcdab6-0263-42d3-be7d-9602fa15f68c"}
 ...</p>
 
 <h3>LAUNCH</h3>
