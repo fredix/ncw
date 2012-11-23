@@ -39,17 +39,18 @@
 <p>NCW needs three steps before using it.</p>
 
 <ol>
-<li>create a user
-in MongoDB
-create user collection in the <em>nodecast_prod</em> database (in the futur this is will be done through an HTTP API)</li>
-</ol><pre><code>doc = { login : 'user', email : 'user@email.com', authentication_token : 'token'}
+<li>create a user into MongoDB</li>
+</ol><p>create user collection in the <em>nodecast_prod</em> database (in the futur this is will be done through an HTTP API)</p>
+
+<pre><code>doc = { login : 'user', email : 'user@email.com', authentication_token : 'token'}
 db.users.insert(doc);
 </code></pre>
 
 <ol>
-<li>create a node
-A node is to be identify the host where yours payloads come from. You should create a node for each physical or virtual server.</li>
-</ol><pre><code>$ curl -H X-nodename: "your-node-name" --user "email:token" http://ncs-ip:4567/node/create
+<li>create a node</li>
+</ol><p>a node is to be identify the host where yours payloads come from. You should create a node for each physical or virtual server.</p>
+
+<pre><code>$ curl -H X-nodename: "your-node-name" --user "email:token" http://ncs-ip:4567/node/create
 </code></pre>
 
 <p>return a node uuid :</p>
@@ -58,9 +59,10 @@ A node is to be identify the host where yours payloads come from. You should cre
 </code></pre>
 
 <ol>
-<li>create a workflow
-Nodecast need a workflow before scheduling your task.</li>
-</ol><pre><code>$ curl -H "X-workflow: test" -d '{ "worker1": 1, "worker2": 2 }' --user "user@email.com:token" http://127.0.0.1:4567/workflow/create
+<li>create a workflow</li>
+</ol><p>Nodecast need a workflow before scheduling your task.</p>
+
+<pre><code>$ curl -H "X-workflow: test" -d '{ "worker1": 1, "worker2": 2 }' --user "user@email.com:token" http://127.0.0.1:4567/workflow/create
 </code></pre>
 
 <p>return a workflow uuid : </p>
