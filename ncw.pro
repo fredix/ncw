@@ -23,6 +23,7 @@ LIBS += /usr/local/lib/libmongoclient.a \
         -lQxtCore \
         -lzmq
 
+INCLUDEPATH += ./externals/cppzmq/
 INCLUDEPATH += ./externals/libqxt/
 INCLUDEPATH += ./externals/libqxt/core
 INCLUDEPATH += ./externals/mongodb/src

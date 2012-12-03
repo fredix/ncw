@@ -36,8 +36,9 @@ Zstream::Zstream(zmq::context_t *a_context, QString a_host,  QString a_directory
     z_message = new zmq::message_t(2);
     z_receive = new zmq::socket_t (*m_context, ZMQ_REQ);
 
-    uint64_t hwm = 50000;
-    z_receive->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    int hwm = 50000;
+    z_receive->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
+    z_receive->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
 
 
     std::cout << "Connecting to the ncs stream" << std::endl;
@@ -403,8 +404,9 @@ Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : 
 
     z_sender = new zmq::socket_t (*m_context, ZMQ_REQ);
 
-    uint64_t hwm = 50000;
-    z_sender->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    int hwm = 50000;
+    z_sender->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
+    z_sender->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
 
 
     //int linger = 0;
@@ -529,8 +531,9 @@ Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_cont
     QByteArray t_connection_string = connection_string.toAscii();
 
     m_socket_worker = new zmq::socket_t (*m_context, ZMQ_PUSH);
-    uint64_t hwm = 50000;
-    m_socket_worker->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));
+    int hwm = 50000;
+    m_socket_worker->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
+    m_socket_worker->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
 
     //int linger = 0;
     //m_socket_worker->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
@@ -622,8 +625,10 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     m_message = new zmq::message_t(2);
 
     m_receiver = new zmq::socket_t(*m_context, ZMQ_PULL);
-    uint64_t hwm = 50000;
-    m_receiver->setsockopt(ZMQ_HWM, &hwm, sizeof (hwm));    
+    int hwm = 50000;
+    m_receiver->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
+    m_receiver->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
+
     //m_receiver->setsockopt(ZMQ_IDENTITY, worker_uuid.toStdString(),  worker_uuid.toStdString().size());
 
 
@@ -663,8 +668,9 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
     qDebug() << "FILTER4 : " << filter4;
 
     m_socket_pubsub = new zmq::socket_t (*m_context, ZMQ_SUB);
-    uint64_t pub_hwm = 50000;
-    m_socket_pubsub->setsockopt(ZMQ_HWM, &pub_hwm, sizeof (pub_hwm));
+    int pub_hwm = 50000;
+    m_socket_pubsub->setsockopt(ZMQ_SNDHWM, &pub_hwm, sizeof (pub_hwm));
+    m_socket_pubsub->setsockopt(ZMQ_RCVHWM, &pub_hwm, sizeof (pub_hwm));
 
     //int linger = 0;
     //m_socket_pubsub->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));

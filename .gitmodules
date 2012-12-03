@@ -4,3 +4,9 @@
 [submodule "externals/libqxt"]
 	path = externals/libqxt
 	url = git://github.com/nodecast/libqxt.git
+[submodule "externals/zeromq"]
+	path = externals/zeromq
+	url = git://github.com/nodecast/zeromq.git
+[submodule "externals/cppzmq"]
+	path = externals/cppzmq
+	url = git://github.com/zeromq/cppzmq.git
