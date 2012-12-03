@@ -3,16 +3,18 @@ ncw is the nodecast worker
 INSTALL
 =======
 
-install deb :
-apt-get install g++ make scons libzmq-dev libboost-all-dev libqt4-dev libavahi-compat-libdnssd-dev
-(if libzmq-dev (<= 2.2.x) is not packaged in your Linux distribution
-get it from http://www.zeromq.org/intro:get-the-software)
-
+install some debs :
+apt-get install g++ make autoconf scons libboost-all-dev libqt4-dev libavahi-compat-libdnssd-dev
 
 get submodule libraries :
 git submodule update --init
 
 
+make the zeromq lib :
+cd externals/zeromq
+./configure
+make
+sudo make install
 
 install libqxt or your distribution's package libqxt-dev (>= 0.6.2)
 cd external/libqxt
@@ -75,10 +77,11 @@ return node auth : {"node_password":"e6cc13a3-1236-46cb-b40f-a66650ab5eef","node
 
 
 Launch a worker :
-ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=process --worker-name="ls" --exec="ls"
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=process --worker-name="ls" --exec="ls" --stdout=true --directory=/home/user/ncw_data/
+
 
 Launch a service :
-ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=service --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate"
+ncw --ncs-ip=127.0.0.1 --ncs-port=5569 --node-uuid=your-node-uuid --node-password=your-node-password --worker-type=service --worker-name="bttrack" --exec="/usr/bin/bttrack --bind 0.0.0.0 --port 6969 --dfile dstate" --stdout=true --directory=/home/user/ncw_data/
 
 
 
