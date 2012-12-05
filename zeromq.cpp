@@ -142,14 +142,19 @@ void Zstream::get_stream(BSONObj payload, string filename, bool *status)
         {
             try {
                 BSONObj error_payload = bo((char*)request.data());
-                std::cout << "Zstream::get_stream ERROR : " << error_payload << std::endl;
+                //std::cout << "Zstream::get_stream ERROR : " << error_payload << std::endl;
 
-                out.close ();
-                QFile file(path);
-                file.open(QIODevice::WriteOnly);
-                file.remove();
-                *status = false;
-                break;
+                if (error_payload.hasField("error"))
+                {
+                    // Nodecast send an error json : file not found
+                    std::cout << "Zstream::get_stream ERROR : " << error_payload << std::endl;
+                    out.close ();
+                    QFile file(path);
+                    file.open(QIODevice::WriteOnly);
+                    file.remove();
+                    *status = false;
+                    break;
+                }
             }
             catch (mongo::MsgAssertionException &e)
             {
