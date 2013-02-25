@@ -117,13 +117,12 @@ void NCWhandler::push_payload(QString s)
 
         //make your treatment and return a json with your response
 
-         QString res = "{\"status\": \"ok\"}";
+    //     QString res = "{\"status\": \"ok\"}";
 
 
-        writeStdout(res);
 
     //    QString res = "{\"status\": \"error\"}";
-        writeStdout(res);
+  //      writeStdout(res);
 
 
 }
@@ -247,6 +246,8 @@ int main(int argc, char *argv[])
 
     QObject::connect(&io, SIGNAL(parseData(QString)), &ncwhandler, SLOT(push_payload(QString)), Qt::QueuedConnection);
     QObject::connect(&ncwhandler, SIGNAL(emit_payload(QVariant)), &email, SLOT(sendEmail(QVariant)), Qt::QueuedConnection);
+
+    QObject::connect(&email, SIGNAL(emit_response(QString)), &ncwhandler, SLOT(writeStdout(QString)), Qt::QueuedConnection);
 
     return a.exec();
 }

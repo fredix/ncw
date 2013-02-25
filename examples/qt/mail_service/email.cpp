@@ -23,18 +23,39 @@
 
 Email::Email(email_params a_email) : m_host(a_email.smtp_hostname), m_username(a_email.smtp_username), m_password(a_email.smtp_password)
 {
-    qDebug() << "Email:Email CONSTRUCT";
+    //qDebug() << "Email:Email CONSTRUCT";
     m_mutex = new QMutex();
 
-    m_smtp = NULL;
+//    m_smtp = NULL;
     m_message = NULL;
 
+    m_smtp = new QxtSmtp();
+
+    connect(m_smtp, SIGNAL(mailFailed(int,int)), this, SLOT(failed()));
+    connect(m_smtp, SIGNAL(mailSent(int)), this, SLOT(success()));
+    connect(m_smtp, SIGNAL(disconnected()), this, SLOT(reconnect()));
+
+    m_smtp->connectToSecureHost(m_host.toAscii());
+    m_smtp->setStartTlsDisabled(true);
+    m_smtp->setUsername(m_username.toAscii());
+    m_smtp->setPassword(m_password.toAscii());
 }
 
 
+
+void Email::reconnect()
+{
+    //QTest::qSleep(2000);
+
+    m_smtp->connectToSecureHost(m_host.toAscii());
+    m_smtp->setStartTlsDisabled(true);
+    m_smtp->setUsername(m_username.toAscii());
+    m_smtp->setPassword(m_password.toAscii());
+}
+
 void Email::sendEmail(QVariant json)
 {
-    //m_mutex->lock();
+   // m_mutex->lock();
     //qDebug() << "!!!!!! Email::sendEmail  : " << json;
 
     if (json.toMap().contains("exp")
@@ -50,18 +71,18 @@ void Email::sendEmail(QVariant json)
 
          //QString log = exp + " " + dest + " " + field3;
 
-        if (m_smtp) delete(m_smtp);
+       // if (m_smtp) delete(m_smtp);
         if (m_message) delete(m_message);
-        m_smtp = NULL;
+       // m_smtp = NULL;
         m_message = NULL;
 
 
-
+/*
         m_smtp = new QxtSmtp();
 
         connect(m_smtp, SIGNAL(mailFailed(int,int)), this, SLOT(failed()));
         connect(m_smtp, SIGNAL(mailSent(int)), this, SLOT(success()));
-
+*/
 
         m_message = new QxtMailMessage();
 
@@ -76,11 +97,12 @@ void Email::sendEmail(QVariant json)
         headers.insert("from", exp.toLatin1());
         m_message->setExtraHeaders(headers);
 
+        /*
         m_smtp->connectToSecureHost(m_host.toAscii());
         m_smtp->setStartTlsDisabled(true);
         m_smtp->setUsername(m_username.toAscii());
         m_smtp->setPassword(m_password.toAscii());
-
+*/
 
         m_smtp->send(*m_message);
     }
@@ -89,21 +111,29 @@ void Email::sendEmail(QVariant json)
 
 void Email::failed()
 {
-    qDebug() << "Email::failed";
+    QString res = "{\"status\": \"ko\"}";
+    emit emit_response(res);
 
-    m_smtp->disconnectFromHost();
-    m_mutex->unlock();
+   // qDebug() << "Email::failed";
+
+  //  m_smtp->disconnectFromHost();
+    //m_mutex->unlock();
 }
 
 
 void Email::success()
 {
-    qDebug() << "Email::sucess";
+    QString res = "{\"status\": \"ok\"}";
+    emit emit_response(res);
 
-    m_smtp->disconnectFromHost();
-    //m_mutex->unlock();
+   // qDebug() << "Email::sucess";
+
+    //m_smtp->disconnectFromHost();
+  //  m_mutex->unlock();
 }
 
 
 Email::~Email()
-{}
+{
+    delete(m_smtp);
+}

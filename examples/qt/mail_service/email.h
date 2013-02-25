@@ -28,6 +28,7 @@
 #include <QxtJSON>
 //#include <QxtNetwork/qxtsmtp.h>
 #include <QxtNetwork>
+#include <QtTest/QTest>
 
 struct email_params {
     QString smtp_hostname;
@@ -42,6 +43,11 @@ public:
     Email(email_params a_email);
     ~Email();
 
+
+signals:
+    void emit_response(QString res);
+
+
 private:
     QString m_host;
     QString m_username;
@@ -52,6 +58,9 @@ private:
 
 public slots:
     void sendEmail(QVariant json);
+
+private slots:
+    void reconnect();
     void failed();
     void success();
 };
