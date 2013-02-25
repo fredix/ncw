@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2013  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -21,7 +21,7 @@
 #include "email.h"
 #include <iostream>
 
-Email::Email(email_params a_email) : m_host(a_email.smtp_hostname), m_username(a_email.smtp_username), m_password(a_email.smtp_password), m_sender(a_email.smtp_sender), m_recipient(a_email.smtp_recipient)
+Email::Email(email_params a_email) : m_host(a_email.smtp_hostname), m_username(a_email.smtp_username), m_password(a_email.smtp_password)
 {
     qDebug() << "Email:Email CONSTRUCT";
     m_mutex = new QMutex();

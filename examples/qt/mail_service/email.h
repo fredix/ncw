@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2013  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -33,8 +33,6 @@ struct email_params {
     QString smtp_hostname;
     QString smtp_username;
     QString smtp_password;
-    QString smtp_sender;
-    QString smtp_recipient;
 };
 
 class Email : public QObject
@@ -48,8 +46,6 @@ private:
     QString m_host;
     QString m_username;
     QString m_password;
-    QString m_sender;
-    QString m_recipient;
     QMutex *m_mutex;
     QxtSmtp *m_smtp;
     QxtMailMessage *m_message;

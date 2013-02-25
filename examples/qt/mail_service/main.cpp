@@ -1,6 +1,6 @@
 /****************************************************************************
 **   ncw is the nodecast worker, client of the nodecast server
-**   Copyright (C) 2010-2012  Frédéric Logier <frederic@logier.org>
+**   Copyright (C) 2010-2013  Frédéric Logier <frederic@logier.org>
 **
 **   https://github.com/nodecast/ncw
 **
@@ -222,36 +222,6 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-
-
-    if(options.count("smtp-sender")) {
-        emailparams.smtp_sender = options.value("smtp-sender").toString();
-        settings.setValue("smtp-sender", emailparams.smtp_sender);
-    }
-    else if(settings.contains("smtp-sender"))
-    {
-        emailparams.smtp_sender = settings.value("smtp-sender").toString();
-    }
-    else {
-        std::cout << "ncs: --smtp-sender requires a parameter" << std::endl;
-        options.showUsage();
-        return -1;
-    }
-
-
-    if(options.count("smtp-recipient")) {
-        emailparams.smtp_recipient = options.value("smtp-recipient").toString();
-        settings.setValue("smtp-recipient", emailparams.smtp_recipient);
-    }
-    else if(settings.contains("smtp-recipient"))
-    {
-        emailparams.smtp_recipient = settings.value("smtp-recipient").toString();
-    }
-    else {
-        std::cout << "ncs: --smtp-recipient requires a parameter" << std::endl;
-        options.showUsage();
-        return -1;
-    }
 
 
 
