@@ -150,9 +150,12 @@ void Service::get_pubsub(string data)
             std::cout << "Service::get_pubsub : " << l_data  << std::endl;
 
 
+
+            if (l_data.hasField("session_uuid"))
+            {
             BSONElement session_uuid = l_data.getField("session_uuid");
             m_session_uuid = QString::fromStdString(session_uuid.str());
-
+            }
 
 
 
@@ -417,7 +420,7 @@ void Service::readyReadStandardOutput()
         {
             b_datas << "type" << "service";
             b_datas << "session_uuid" << m_session_uuid.toStdString();
-            b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << b_out;
+            b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "data" << b_out;
 
         }
     }
@@ -430,7 +433,7 @@ void Service::readyReadStandardOutput()
             {
                 b_datas << "type" << "service";
                 b_datas << "session_uuid" << m_session_uuid.toStdString();
-                b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "datas" << json.toStdString();
+                b_datas << "name" << m_service_name.toStdString() << "action" << "terminate" << "timestamp" << timestamp.toTime_t() << "data" << json.toStdString();
             }
     }
 
