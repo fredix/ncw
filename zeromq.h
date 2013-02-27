@@ -108,7 +108,7 @@ class Zpayload : public QObject
 {
     Q_OBJECT
 public:
-    Zpayload(zmq::context_t *a_context, ncw_params ncw);
+    Zpayload(zmq::context_t *a_context, ncw_params ncw, QString a_ncs_ip);
     ~Zpayload();
 
 
@@ -149,22 +149,12 @@ class Zeromq : public QObject
 {
     Q_OBJECT
 public:
-    Zeromq(ncw_params ncw);
+    Zeromq(ncw_params ncw, QString ncs_ip);
     ~Zeromq();
 
     Ztracker *tracker;
     Zpayload *payload;
     Zstream *zstream;
-
-    // Unix signal handlers.
-    static void hupSignalHandler(int unused);
-    static void termSignalHandler(int unused);
-
-
-public slots:
-    // Qt signal handlers.
-    void handleSigHup();
-    void handleSigTerm();
 
 private:
     Process *ncw_process;
@@ -173,12 +163,7 @@ private:
     QMutex *m_port_mutex;
     zmq::context_t *m_context;
     ncw_params m_ncw;
-
-    static int sighupFd[2];
-    static int sigtermFd[2];
-
-    QSocketNotifier *snHup;
-    QSocketNotifier *snTerm;
+    QString m_ncs_ip;
 };
 
 #endif // ZEROMQ_H

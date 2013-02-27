@@ -24,7 +24,6 @@
 
 
 struct ncw_params {
-    QString ncs_ip;
     QString ncs_port;
     QString worker_name;
     QString worker_type;

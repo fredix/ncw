@@ -23,11 +23,6 @@
 
 
 
-int Zeromq::sighupFd[2]={};
-int Zeromq::sigtermFd[2]={};
-
-
-
 Zstream::Zstream(zmq::context_t *a_context, QString a_host,  QString a_directory) : m_context(a_context), m_host(a_host), m_directory(a_directory)
 {
     m_mutex = new QMutex();
@@ -528,7 +523,7 @@ Zpayload::~Zpayload()
 }
 
 
-Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw) : m_context(a_context), m_host(ncw.ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password), m_ncw(ncw)
+Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw, QString a_ncs_ip) : m_context(a_context), m_host(a_ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password), m_ncw(ncw)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
 
@@ -800,11 +795,15 @@ void Zpayload::receive_payload()
 
 Zeromq::~Zeromq()
 {
+    delete(tracker);
+    delete(payload);
+    delete(zstream);
+    delete(m_context);
     qDebug() << "Zeromq DELETE !";
 }
 
 
-Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
+Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_ncs_ip)
 {
     qDebug() << "Zeromq::construct";
     StringToEnumMap enumToWorker;
@@ -817,17 +816,6 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     qRegisterMetaType<ncw_params>("ncw_params");
 
 
-    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
-        qFatal("Couldn't create HUP socketpair");
-
-    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
-        qFatal("Couldn't create TERM socketpair");
-    snHup = new QSocketNotifier(sighupFd[1], QSocketNotifier::Read, this);
-    connect(snHup, SIGNAL(activated(int)), this, SLOT(handleSigHup()));
-    snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
-    connect(snTerm, SIGNAL(activated(int)), this, SLOT(handleSigTerm()));
-
-
     m_context = new zmq::context_t(1);
 
 
@@ -836,7 +824,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
     /*********** TRACKER ***********/
     QThread *thread_tracker = new QThread;
-    tracker = new Ztracker(m_context, m_ncw.ncs_ip, m_ncw.ncs_port);
+    tracker = new Ztracker(m_context, m_ncs_ip, m_ncw.ncs_port);
     connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
     tracker->moveToThread(thread_tracker);
     thread_tracker->start();
@@ -848,7 +836,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     QThread *thread_payload = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    payload = new Zpayload(m_context, m_ncw);
+    payload = new Zpayload(m_context, m_ncw, m_ncs_ip);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     payload->moveToThread(thread_payload);
     thread_payload->start();
@@ -862,7 +850,7 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
     QThread *thread_stream = new QThread;
     //payload = new Zpayload(m_context, m_host, m_port);
 
-    zstream = new Zstream(m_context, m_ncw.ncs_ip, m_ncw.directory);
+    zstream = new Zstream(m_context, m_ncs_ip, m_ncw.directory);
     //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
     zstream->moveToThread(thread_stream);
     thread_stream->start();
@@ -915,45 +903,3 @@ Zeromq::Zeromq(ncw_params a_ncw) : m_ncw(a_ncw)
 
 }
 
-
-
-void Zeromq::hupSignalHandler(int)
-{
-    char a = 1;
-    ::write(sighupFd[0], &a, sizeof(a));
-}
-
-void Zeromq::termSignalHandler(int)
-{
-    char a = 1;
-    ::write(sigtermFd[0], &a, sizeof(a));
-}
-
-void Zeromq::handleSigTerm()
-{
-    snTerm->setEnabled(false);
-    char tmp;
-    ::read(sigtermFd[1], &tmp, sizeof(tmp));
-
-    // do Qt stuff
-    std::cout << "Received SIGTERM" << std::endl;
-    snTerm->setEnabled(true);
-}
-
-void Zeromq::handleSigHup()
-{
-    snHup->setEnabled(false);
-    char tmp;
-    ::read(sighupFd[1], &tmp, sizeof(tmp));
-
-    // do Qt stuff
-    std::cout << "Received SIGHUP" << std::endl;
-
-    delete(tracker);
-    delete(payload);
-    delete(zstream);
-    delete(m_context);
-
-    snHup->setEnabled(true);
-    qApp->exit();
-}

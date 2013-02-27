@@ -22,6 +22,7 @@
 #include <QtCore/QCoreApplication>
 #include "main.h"
 
+typedef QSharedPointer<Zeromq> Zeromq_pushPtr;
 
 
 /*
@@ -44,12 +45,74 @@ static void s_catch_signals (void)
 }
 */
 
+
+
+int NcwDaemon::sighupFd[2]={};
+int NcwDaemon::sigtermFd[2]={};
+
+
+
+
+NcwDaemon::NcwDaemon(QObject *parent, const char *name) : QObject(parent)
+{
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sighupFd))
+       qFatal("Couldn't create HUP socketpair");
+
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
+       qFatal("Couldn't create TERM socketpair");
+    snHup = new QSocketNotifier(sighupFd[1], QSocketNotifier::Read, this);
+    connect(snHup, SIGNAL(activated(int)), this, SLOT(handleSigHup()));
+    snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
+    connect(snTerm, SIGNAL(activated(int)), this, SLOT(handleSigTerm()));
+
+
+}
+
+NcwDaemon::~NcwDaemon()
+{}
+
+void NcwDaemon::hupSignalHandler(int)
+{
+    char a = 1;
+    ::write(sighupFd[0], &a, sizeof(a));
+}
+
+void NcwDaemon::termSignalHandler(int)
+{
+    char a = 1;
+    ::write(sigtermFd[0], &a, sizeof(a));
+}
+
+void NcwDaemon::handleSigTerm()
+{
+    snTerm->setEnabled(false);
+    char tmp;
+    ::read(sigtermFd[1], &tmp, sizeof(tmp));
+
+    qApp->exit();
+
+    snTerm->setEnabled(true);
+}
+
+void NcwDaemon::handleSigHup()
+{
+    snHup->setEnabled(false);
+    char tmp;
+    ::read(sighupFd[1], &tmp, sizeof(tmp));
+
+    qApp->exit();
+
+    snHup->setEnabled(true);
+}
+
+
 // http://doc.qt.nokia.com/4.7/unix-signals.html
 static void setup_unix_signal_handlers()
 {
     struct sigaction hup, term;
 
-    hup.sa_handler = Zeromq::hupSignalHandler;
+    hup.sa_handler = NcwDaemon::hupSignalHandler;
+
     sigemptyset(&hup.sa_mask);
     hup.sa_flags = 0;
     hup.sa_flags |= SA_RESTART;
@@ -57,7 +120,7 @@ static void setup_unix_signal_handlers()
     /*if (sigaction(SIGHUP, &hup, 0) > 0)
        return 1;*/
 
-    term.sa_handler = Zeromq::termSignalHandler;
+    term.sa_handler = NcwDaemon::termSignalHandler;
     sigemptyset(&term.sa_mask);
     term.sa_flags |= SA_RESTART;
 
@@ -76,15 +139,19 @@ static void setup_unix_signal_handlers()
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication nodecast_worker(argc, argv);
 
     bool debug;
     bool verbose;
 
     ncw_params ncw;
     ncw.stdout=false;
+    QString ncs_ip;
 
 
-    QCoreApplication nodecast_worker(argc, argv);
+    QHash<QString, Zeromq_pushPtr> zeromq_push;
+
+    NcwDaemon ncw_daemon;
 
 
     QxtCommandOptions options;
@@ -181,12 +248,12 @@ int main(int argc, char *argv[])
 
 
     if(options.count("ncs-ip")) {
-        ncw.ncs_ip = options.value("ncs-ip").toString();
-        settings.setValue("ncs-ip", ncw.ncs_ip);
+        ncs_ip = options.value("ncs-ip").toString();
+        settings.setValue("ncs-ip", ncs_ip);
     }
     else if(settings.contains("ncs-ip"))
     {
-        ncw.ncs_ip = settings.value("ncs-ip").toString();
+        ncs_ip = settings.value("ncs-ip").toString();
     }
     else {
         std::cout << "ncw: --ncs-ip requires a parameter" << std::endl;
@@ -263,32 +330,19 @@ int main(int argc, char *argv[])
     {
         ncw.stdout = settings.value("stdout").toBool();
     }
-
-
-
-
-    //  s_catch_signals ();
-
-/*
-    QThread *thread_interrupt = new QThread;
-    CatchInterrupt *signal_catch = new CatchInterrupt();
-    QObject::connect(thread_interrupt, SIGNAL(started()), signal_catch, SLOT(init()));
-    signal_catch->moveToThread(thread_interrupt);
-    thread_interrupt->start();
-*/
-
-
+    settings.sync();
 
 
     setup_unix_signal_handlers();
 
+    QStringList ips = ncs_ip.split(",");
 
-    Zeromq zeromq(ncw);
-
+    foreach (QString ip, ips)
+    {
+        zeromq_push[ip] =  QSharedPointer<Zeromq> (new Zeromq(ncw, ip));
+    }
 
     qDebug() << "end";
-
-
     return nodecast_worker.exec();
 }
 

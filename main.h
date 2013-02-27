@@ -25,6 +25,7 @@
 #include <iostream>
 #include <signal.h>
 
+#include <QObject>
 #include <QDebug>
 #include <QSettings>
 #include <QDir>
@@ -36,6 +37,30 @@
 #include "ncw_global.h"
 
 
+class NcwDaemon : public QObject
+{
+    Q_OBJECT
+
+  public:
+    NcwDaemon(QObject *parent = 0, const char *name = 0);
+    ~NcwDaemon();
+
+    // Unix signal handlers.
+    static void hupSignalHandler(int unused);
+    static void termSignalHandler(int unused);
+
+  public slots:
+    // Qt signal handlers.
+    void handleSigHup();
+    void handleSigTerm();
+
+  private:
+    static int sighupFd[2];
+    static int sigtermFd[2];
+
+    QSocketNotifier *snHup;
+    QSocketNotifier *snTerm;
+};
 
 
 #endif // MAIN_H
