@@ -40,8 +40,6 @@ make the mongodb client :
 ```bash
 cd externals/mongo-cxx-driver/
 scons mongoclient
-sudo cp libmongoclient.a /usr/local/lib
-sudo ldconfig
 ```
 
 last, make the nodecast worker :

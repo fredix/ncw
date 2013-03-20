@@ -16,7 +16,7 @@ SOURCES += main.cpp \
     process.cpp \
     service.cpp \
     worker.cpp
-LIBS += /usr/local/lib/libmongoclient.a \
+LIBS += ./externals/mongo-cxx-driver/libmongoclient.a \
         -lboost_system \
         -lboost_filesystem \
         -lboost_thread-mt \
