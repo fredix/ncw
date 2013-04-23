@@ -197,7 +197,7 @@ void Service::get_pubsub(string data)
                 //child_process->write(data.toString().data());
                 child_process->write(payload.toAscii());
                 child_process->write("\n");
-                //child_process->waitForBytesWritten(100000);
+                child_process->waitForBytesWritten();
             }
 
 
@@ -383,16 +383,8 @@ void Service::readyReadStandardOutput()
 
         std::cout << "b_out : " << b_out << std::endl;
 
-        if (b_out.hasField("action") && (b_out.getField("action").str().compare("push") == 0
-                                         || b_out.getField("action").str().compare("publish") == 0
-                                         || b_out.getField("action").str().compare("replay") == 0))
-        {
-            qDebug() << "WORKER SERVICE BEFORE CREATE PAYLOAD EMIT";
-            emit push_payload(b_out);
-            qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
-            return;
-        }
-        else if (b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
+
+        if (b_out.hasField("action") && b_out.getField("action").str().compare("get_file") == 0)
         {
             qDebug() << "WORKER SERVICE BEFORE GET FILE PAYLOAD EMIT";
 
@@ -414,6 +406,13 @@ void Service::readyReadStandardOutput()
             qDebug() << "WORKER SERVICE AFTER GET FILE PAYLOAD EMIT";
 
             received_file(filename.str(), status);
+            return;
+        }
+        else if (b_out.hasField("action") && (b_out.getField("action").str().compare("terminate") != 0))
+        {
+            qDebug() << "WORKER SERVICE BEFORE CREATE PAYLOAD EMIT";
+            emit push_payload(b_out);
+            qDebug() << "WORKER SERVICE AFTER CREATE PAYLOAD EMIT";
             return;
         }
         else if (!m_session_uuid.isEmpty())
