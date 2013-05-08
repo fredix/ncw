@@ -50,6 +50,7 @@ private slots:
     virtual void watchdog()=0;
     virtual void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
     virtual void readyReadStandardOutput();
+    virtual void process_write(qint64 val);
 
 
 signals:

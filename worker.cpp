@@ -44,6 +44,10 @@ void Worker::watchdog()
 void Worker::readyReadStandardOutput()
 {}
 
+
+void Worker::process_write(qint64 val)
+{}
+
 void Worker::s_job_receive(bson::bo data)
 {
     qDebug() << "Worker::s_mother_job_receive";
