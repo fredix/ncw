@@ -23,7 +23,7 @@
 Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 {
     qDebug() << "Service::Service constructer";
-    child_process = new QProcess();
+    child_process = new QProcess(this);
 
     m_mutex = new QMutex;
 
@@ -85,7 +85,7 @@ void Service::launch()
     because I must waiting for the pub sub socket is ready **/
     sleep(2);
     /************* END GRUIK CODE   *****/
-    child_process->start(m_child_exec);
+    child_process->start(m_child_exec, QProcess::ReadWrite);
     bool start = child_process->waitForStarted(30000);
 
     if (!start)
@@ -135,6 +135,7 @@ void Service::get_pubsub(string data)
     qDebug() << " cap 1 : " << cap[1];
 
     payload.remove(cap[1]);
+    payload.replace(",", " , ");
 
     qDebug() << "PAYLOAD : " << payload;
 
@@ -143,7 +144,7 @@ void Service::get_pubsub(string data)
     try {
         //l_data = BSONObj((char*)payload.data());
 
-        l_data = mongo::fromjson(payload.toAscii());
+        l_data = mongo::fromjson(payload.toStdString());
 
         if (l_data.isValid() && !l_data.isEmpty())
         {
@@ -194,10 +195,12 @@ void Service::get_pubsub(string data)
             }
             else
             {
-                //child_process->write(data.toString().data());
-                child_process->write(payload.toAscii());
-                child_process->write("\n");
-                child_process->waitForBytesWritten();
+                //child_process->write(data.toString().data());                        
+                payload.replace("\"", "\\\"");
+                qDebug() << "WRITE TO STDIN PROCESS : " << payload;                
+                child_process->write((payload + "\n").toLocal8Bit());
+                bool wait = child_process->waitForBytesWritten();
+                qDebug() << "WRITE TO STDIN PROCESS IS OK ? : " << wait;
             }
 
 
@@ -325,12 +328,15 @@ void Service::s_job_receive(bson::bo data) {
 
         param.append(" ").append(QString::fromStdString(r_datas.str()));
 
-        QByteArray q_datas = r_datas.valuestr();
-        qDebug() << "!!!!   SEND PAYLOAD TO STDIN : " << q_datas;
+        //QByteArray q_datas = r_datas.valuestr();
+        QString q_datas = QString::fromStdString(r_datas.valuestr());
+        q_datas.replace("\"", "\\\"");
 
-        child_process->write(q_datas);
-        child_process->write("\n");
-        //child_process->waitForBytesWritten(100000);
+        qDebug() << "!!!! Service::s_job_receive SEND PAYLOAD TO STDIN : " << q_datas;
+
+        child_process->write((q_datas + "\n").toLocal8Bit());
+        bool wait = child_process->waitForBytesWritten();
+        qDebug() << "Service::s_job_receive WRITE TO STDIN PROCESS IS OK ? : " << wait;
     }
 
 
@@ -368,6 +374,8 @@ void Service::readyReadStandardOutput()
     QByteArray service_stdout = child_process->readAllStandardOutput();
     QString json = service_stdout;
     json = json.simplified();
+    json = json.replace(",", " , ");
+
 
     std::cout << "STDOUT : " << json.toStdString() << std::endl;
 
@@ -378,7 +386,7 @@ void Service::readyReadStandardOutput()
     QDateTime timestamp = QDateTime::currentDateTime();
 
     try {
-        b_out = mongo::fromjson(json.toAscii());
+        b_out = mongo::fromjson(json.toStdString());
 
 
         std::cout << "b_out : " << b_out << std::endl;
