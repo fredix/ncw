@@ -48,6 +48,8 @@ private:
 private slots:
      void watchdog();
      void readyReadStandardOutput();
+     void process_write(qint64 val);
+
 
 public slots:          
      void launch();

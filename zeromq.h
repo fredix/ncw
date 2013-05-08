@@ -133,7 +133,7 @@ private:
     ncw_params m_ncw;
 
 signals:    
-    void payload(bson::bo data);
+    void emit_payload(bson::bo data);
     void emit_pubsub(string data);
     void emit_launch_worker(ncw_params);
 

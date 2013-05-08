@@ -769,7 +769,7 @@ void Zpayload::receive_payload()
                     std::cout << "Zpayload received : " << res << " data : " << data  << std::endl;
 
                     std::cout << "!!!!!!! BEFORE FORWARD PAYLOAD !!!!" << std::endl;
-                    emit payload(data.copy());
+                    emit emit_payload(data.copy());
                     std::cout << "!!!!!!! AFTER FORWARD PAYLOAD !!!!" << std::endl;
                 }
                 else
@@ -865,7 +865,7 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
 
         ncw_service = new Service(a_ncw);
 
-        connect(payload, SIGNAL(payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+        connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
         connect(payload, SIGNAL(emit_pubsub(string)), ncw_service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
@@ -882,7 +882,7 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
 
         ncw_process = new Process(a_ncw);
 
-        connect(payload, SIGNAL(payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+        connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
 
         connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);

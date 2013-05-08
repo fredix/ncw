@@ -25,6 +25,8 @@ Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
     qDebug() << "Service::Service constructer";
     child_process = new QProcess(this);
 
+    connect(child_process, SIGNAL(bytesWritten(qint64)), this, SLOT(process_write(qint64)), Qt::DirectConnection);
+
     m_mutex = new QMutex;
 
     timer = new QTimer();
@@ -36,6 +38,12 @@ Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 Service::~Service()
 {
     delete(child_process);
+}
+
+void Service::process_write(qint64 val)
+{
+    qDebug() << " WRITE TO PROCESS : " << val;
+
 }
 
 
@@ -196,10 +204,10 @@ void Service::get_pubsub(string data)
             else
             {
                 //child_process->write(data.toString().data());                        
-                qDebug() << "WRITE TO STDIN PROCESS : " << payload;                
-                child_process->write((payload + "\n").toLocal8Bit());
-                bool wait = child_process->waitForBytesWritten();
-                qDebug() << "WRITE TO STDIN PROCESS IS OK ? : " << wait;
+                qDebug() << "WRITE TO STDIN PROCESS : " << payload << " SIZE : " << payload.size();
+                qint64 size = child_process->write((payload + "\n").toLocal8Bit());
+                child_process->waitForBytesWritten(-1);
+                qDebug() << "WRITE TO STDIN : " << payload << " SIZE : " << size;
             }
 
 
