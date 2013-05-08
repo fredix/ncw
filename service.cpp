@@ -196,7 +196,6 @@ void Service::get_pubsub(string data)
             else
             {
                 //child_process->write(data.toString().data());                        
-                payload.replace("\"", "\\\"");
                 qDebug() << "WRITE TO STDIN PROCESS : " << payload;                
                 child_process->write((payload + "\n").toLocal8Bit());
                 bool wait = child_process->waitForBytesWritten();
@@ -330,8 +329,6 @@ void Service::s_job_receive(bson::bo data) {
 
         //QByteArray q_datas = r_datas.valuestr();
         QString q_datas = QString::fromStdString(r_datas.valuestr());
-        q_datas.replace("\"", "\\\"");
-
         qDebug() << "!!!! Service::s_job_receive SEND PAYLOAD TO STDIN : " << q_datas;
 
         child_process->write((q_datas + "\n").toLocal8Bit());
