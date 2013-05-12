@@ -20,12 +20,23 @@
 
 #include "service.h"
 
-Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
+Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_context(a_context), m_ncw(a_ncw)
 {
-    qDebug() << "Service::Service constructer";
+    qDebug() << "Service::Service construct";
+
     child_process = new QProcess(this);
 
-    connect(child_process, SIGNAL(bytesWritten(qint64)), this, SLOT(process_write(qint64)), Qt::DirectConnection);
+    // Prepare our context and socket
+    z_message = new zmq::message_t(2);
+    z_worker = new zmq::socket_t (*m_context, ZMQ_PAIR);
+
+    int hwm = 50000;
+    z_worker->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
+    z_worker->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
+    z_worker->bind ("ipc:///tmp/ncw_worker");
+
+
+
 
     m_mutex = new QMutex;
 
@@ -37,18 +48,16 @@ Service::Service(ncw_params a_ncw) : Worker(), m_ncw(a_ncw)
 
 Service::~Service()
 {
+    z_worker->close();
+    child_process->kill();
     delete(child_process);
-}
-
-void Service::process_write(qint64 val)
-{
-    qDebug() << " WRITE TO PROCESS : " << val;
-
 }
 
 
 void Service::init()
 {
+
+
     QDateTime timestamp = QDateTime::currentDateTime();
 
     m_child_exec = m_ncw.child_exec;
@@ -102,6 +111,8 @@ void Service::launch()
         qApp->exit();
     }
 
+   // connect(child_process, SIGNAL(bytesWritten(qint64)), this, SLOT(process_write(qint64)), Qt::DirectConnection);
+
     if (m_ncw.stdout)
         connect(child_process,SIGNAL(readyReadStandardOutput()),this,SLOT(readyReadStandardOutput()), Qt::DirectConnection);
 
@@ -126,15 +137,14 @@ void Service::watchdog()
 }
 
 
-//void Service::get_pubsub(bson::bo data)
-void Service::get_pubsub(string data)
+void Service::get_pubsub(QString payload)
 {
-    std::cout << "Service::get_pubsub data : " << data << std::endl;
+    qDebug() << "Service::get_pubsub data : " << payload;
 
     QDateTime timestamp = QDateTime::currentDateTime();
 
 
-    QString payload = QString::fromStdString(data);
+   // QString payload = QString::fromStdString(data);
     QRegExp filter("([^@]*@).*");
 
     int pos = filter.indexIn(payload);
@@ -203,11 +213,19 @@ void Service::get_pubsub(string data)
             }
             else
             {
-                //child_process->write(data.toString().data());                        
+                //child_process->write(data.toString().data());
                 qDebug() << "WRITE TO STDIN PROCESS : " << payload << " SIZE : " << payload.size();
-                qint64 size = child_process->write((payload + "\n").toLocal8Bit());
+
+                z_message->rebuild(payload.size());
+                memcpy ((void *) z_message->data (), (char*)payload.toAscii().data(), payload.size());
+                z_worker->send (*z_message);
+
+                // QTextStream flux(input_file);
+                //flux << payload.toUtf8().data();
+
+                /*qint64 size = child_process->write(payload.toAscii().data(), payload.size());
                 child_process->waitForBytesWritten(-1);
-                qDebug() << "WRITE TO STDIN : " << payload << " SIZE : " << size;
+                qDebug() << "WRITE TO STDIN : " << payload << " SIZE : " << size;*/
             }
 
 

@@ -573,12 +573,12 @@ void Zpayload::pubsub_payload()
                 break;
             }
 
-            char *payload = (char*) request.data();
+            //char *payload = (char*) request.data();
 
-            QString raw_data = QString::fromAscii(payload);
+            QString raw_data = QString::fromAscii((char*) request.data(), request.size());
             qDebug() << "RAW DATA : " << raw_data;
 
-            emit emit_pubsub(raw_data.toStdString());
+            emit emit_pubsub(raw_data);
 
             /*
             BSONObj data;
@@ -798,6 +798,7 @@ Zeromq::~Zeromq()
     delete(tracker);
     delete(payload);
     delete(zstream);
+    delete(ncw_service);
     delete(m_context);
     qDebug() << "Zeromq DELETE !";
 }
@@ -861,12 +862,14 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
     switch (enumToWorker[a_ncw.worker_type])
     {
     case WSERVICE:
+    {
         qDebug() << "WSERVICE : " << a_ncw.worker_type ;
 
-        ncw_service = new Service(a_ncw);
+        QThread *thread_service = new QThread;
+        ncw_service = new Service(m_context, a_ncw);
 
         connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
-        connect(payload, SIGNAL(emit_pubsub(string)), ncw_service, SLOT(get_pubsub(string)), Qt::QueuedConnection);
+        connect(payload, SIGNAL(emit_pubsub(QString)), ncw_service, SLOT(get_pubsub(QString)), Qt::QueuedConnection);
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
         connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
@@ -874,8 +877,13 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
-        ncw_service->init();
+        connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
+        ncw_service->moveToThread(thread_service);
+        thread_service->start();
+
+        //ncw_service->init();
         break;
+    }
 
     case WPROCESS:
         qDebug() << "WPROCESS : " << a_ncw.worker_type ;

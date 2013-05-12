@@ -45,16 +45,13 @@ void Worker::readyReadStandardOutput()
 {}
 
 
-void Worker::process_write(qint64 val)
-{}
-
 void Worker::s_job_receive(bson::bo data)
 {
     qDebug() << "Worker::s_mother_job_receive";
 }
 
 
-void Worker::get_pubsub(string data)
+void Worker::get_pubsub(QString data)
 {
     qDebug() << "Worker::mother_get_pubsub";
 }

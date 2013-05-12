@@ -134,7 +134,7 @@ private:
 
 signals:    
     void emit_payload(bson::bo data);
-    void emit_pubsub(string data);
+    void emit_pubsub(QString data);
     void emit_launch_worker(ncw_params);
 
 public slots:    

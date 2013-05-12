@@ -22,18 +22,20 @@
 #define SERVICE_H
 
 #include "worker.h"
-
+#include <QFile>
 
 class Service : public Worker
 {    
 public:
-    Service(ncw_params a_ncw);
+    Service(zmq::context_t *a_context, ncw_params a_ncw);
     ~Service();
-    void init();
 
 private:
     void received_file(string filename, bool status);
 
+    zmq::context_t *m_context;
+    zmq::socket_t *z_worker;
+    zmq::message_t *z_message;
     QMutex *m_mutex;
     QTimer *timer;
     QProcess *child_process;
@@ -44,17 +46,15 @@ private:
     QString m_node_password;
     ncw_params m_ncw;
 
-
 private slots:
      void watchdog();
      void readyReadStandardOutput();
-     void process_write(qint64 val);
 
-
-public slots:          
+public slots:
+     void init();
      void launch();
      void s_job_receive(bson::bo data);
-     void get_pubsub(string data);
+     void get_pubsub(QString data);
 };
 
 #endif // SERVICE_H

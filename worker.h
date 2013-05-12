@@ -32,6 +32,7 @@
 #include <QTimer>
 #include <QMutex>
 #include "ncw_global.h"
+#include <zmq.hpp>
 
 using namespace mongo;
 using namespace bson;
@@ -44,14 +45,11 @@ class Worker : public QObject
 public:
     Worker(QObject *parent = 0);
     ~Worker();
-    virtual void init()=0;
 
 private slots:    
     virtual void watchdog()=0;
     virtual void process_finished(int exitCode, QProcess::ExitStatus exitStatus);
     virtual void readyReadStandardOutput();
-    virtual void process_write(qint64 val);
-
 
 signals:
     void push_payload(bson::bo data);
@@ -59,9 +57,10 @@ signals:
     void get_stream(bson::bo data, string filename, bool *status);
 
 public slots:
+    virtual void init()=0;
     virtual void launch();
     virtual void s_job_receive(bson::bo data)=0;
-    virtual void get_pubsub(string data);
+    virtual void get_pubsub(QString data);
 };
 
 #endif // WORKER_H
