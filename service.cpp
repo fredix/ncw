@@ -98,7 +98,7 @@ void Service::launch()
     because I must waiting for the pub sub socket is ready **/
     sleep(2);
     /************* END GRUIK CODE   *****/
-    child_process->start(m_child_exec, QProcess::ReadWrite);
+    child_process->start(m_child_exec);
     bool start = child_process->waitForStarted(30000);
 
     if (!start)
@@ -133,8 +133,10 @@ void Service::watchdog()
 }
 
 
-void Service::get_pubsub(QString payload)
+void Service::get_pubsub(QString data)
 {
+    QString payload = data;
+
     qDebug() << "Service::get_pubsub data : " << payload;
 
     QDateTime timestamp = QDateTime::currentDateTime();
