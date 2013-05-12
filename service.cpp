@@ -216,7 +216,7 @@ void Service::get_pubsub(QString data)
 
                 zmq::message_t z_message;
                 z_message.rebuild(payload.size());
-                memcpy ((void *) z_message.data (), (char*)payload.toAscii().data(), payload.size());
+                memcpy ((void *) z_message.data (), payload.toAscii().constData(), payload.size());
                 z_worker->send (z_message);
 
                 /*qint64 size = child_process->write(payload.toAscii().data(), payload.size());
