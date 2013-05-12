@@ -35,7 +35,6 @@ private:
 
     zmq::context_t *m_context;
     zmq::socket_t *z_worker;
-    zmq::message_t *z_message;
     QMutex *m_mutex;
     QTimer *timer;
     QProcess *child_process;

@@ -26,16 +26,12 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
 
     child_process = new QProcess(this);
 
-    // Prepare our context and socket
-    z_message = new zmq::message_t(2);
     z_worker = new zmq::socket_t (*m_context, ZMQ_PAIR);
 
     int hwm = 50000;
     z_worker->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
     z_worker->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
-    z_worker->bind ("ipc:///tmp/ncw_worker");
-
-
+    z_worker->connect ("ipc:///tmp/ncw_worker");
 
 
     m_mutex = new QMutex;
@@ -49,7 +45,7 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
 Service::~Service()
 {
     z_worker->close();
-    child_process->kill();
+    child_process->terminate();
     delete(child_process);
 }
 
@@ -216,12 +212,10 @@ void Service::get_pubsub(QString payload)
                 //child_process->write(data.toString().data());
                 qDebug() << "WRITE TO STDIN PROCESS : " << payload << " SIZE : " << payload.size();
 
-                z_message->rebuild(payload.size());
-                memcpy ((void *) z_message->data (), (char*)payload.toAscii().data(), payload.size());
-                z_worker->send (*z_message);
-
-                // QTextStream flux(input_file);
-                //flux << payload.toUtf8().data();
+                zmq::message_t z_message;
+                z_message.rebuild(payload.size());
+                memcpy ((void *) z_message.data (), (char*)payload.toAscii().data(), payload.size());
+                z_worker->send (z_message);
 
                 /*qint64 size = child_process->write(payload.toAscii().data(), payload.size());
                 child_process->waitForBytesWritten(-1);
