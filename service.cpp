@@ -212,7 +212,7 @@ void Service::get_pubsub(QString data)
             else
             {
                 //child_process->write(data.toString().data());
-                qDebug() << "WRITE TO STDIN PROCESS : " << payload << " SIZE : " << payload.size();
+                qDebug() << "WRITE TO ZEROMQ PROCESS : " << payload << " SIZE : " << payload.size();
 
                 zmq::message_t z_message;
                 z_message.rebuild(payload.size());
@@ -353,9 +353,13 @@ void Service::s_job_receive(bson::bo data) {
         QString q_datas = QString::fromStdString(r_datas.valuestr());
         qDebug() << "!!!! Service::s_job_receive SEND PAYLOAD TO STDIN : " << q_datas;
 
-        child_process->write((q_datas + "\n").toLocal8Bit());
-        bool wait = child_process->waitForBytesWritten();
-        qDebug() << "Service::s_job_receive WRITE TO STDIN PROCESS IS OK ? : " << wait;
+//        child_process->write((q_datas + "\n").toLocal8Bit());
+//        bool wait = child_process->waitForBytesWritten();
+
+        zmq::message_t z_message;
+        z_message.rebuild(q_datas.size());
+        memcpy ((void *) z_message.data (), q_datas.toAscii().constData(), q_datas.size());
+        z_worker->send (z_message);
     }
 
 
@@ -364,26 +368,32 @@ void Service::s_job_receive(bson::bo data) {
 
 void Service::received_file(string filename, bool status)
 {
+    QString json;
     if (status)
     {
-        QString json = "{\"received_file\": \"";
+        json = "{\"received_file\": \"";
         json.append(filename.c_str());
         json.append("\"}");
-        child_process->write(json.toAscii());
-        child_process->write("\n");
+        //child_process->write(json.toAscii());
+        //child_process->write("\n");
 
         qDebug() << "RECEIVED FILE " << json;
     }
     else
     {
-        QString json = "{\"error\": \"";
+        json = "{\"error\": \"";
         json.append(filename.c_str());
         json.append("\"}");
-        child_process->write(json.toAscii());
-        child_process->write("\n");
+        //child_process->write(json.toAscii());
+        //child_process->write("\n");
 
         qDebug() << "ERROR ON RECEIVED FILE " << json;
     }
+
+    zmq::message_t z_message;
+    z_message.rebuild(json.size());
+    memcpy ((void *) z_message.data (), json.toAscii().constData(), json.size());
+    z_worker->send (z_message);
 }
 
 
