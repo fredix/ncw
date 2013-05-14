@@ -29,8 +29,11 @@ class Service : public Worker
 public:
     Service(zmq::context_t *a_context, ncw_params a_ncw);
     ~Service();
+    static Service *getInstance();
+
 
 private:
+    static Service *_singleton;
     void received_file(string filename, bool status);
 
     zmq::context_t *m_context;

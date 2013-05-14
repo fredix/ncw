@@ -20,18 +20,25 @@
 
 #include "service.h"
 
+Service *Service::_singleton = NULL;
+
+
+Service* Service::getInstance() {
+      return _singleton;
+}
+
 Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_context(a_context), m_ncw(a_ncw)
 {
     qDebug() << "Service::Service construct";
 
     child_process = new QProcess(this);
 
-    z_worker = new zmq::socket_t (*m_context, ZMQ_PAIR);
+    z_worker = new zmq::socket_t (*m_context, ZMQ_REQ);
 
     int hwm = 50000;
     z_worker->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
     z_worker->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
-    z_worker->connect ("ipc:///tmp/ncw_worker");
+    z_worker->bind ("ipc:///tmp/ncw_worker");
 
 
     m_mutex = new QMutex;
@@ -39,6 +46,8 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(watchdog ()), Qt::DirectConnection);
     timer->start (5000);
+
+    _singleton = this;
 }
 
 
@@ -215,9 +224,14 @@ void Service::get_pubsub(QString data)
                 qDebug() << "WRITE TO ZEROMQ PROCESS : " << payload << " SIZE : " << payload.size();
 
                 zmq::message_t z_message;
+                zmq::message_t z_reply;
                 z_message.rebuild(payload.size());
                 memcpy ((void *) z_message.data (), payload.toAscii().constData(), payload.size());
                 z_worker->send (z_message);
+                z_worker->recv(&z_reply);
+                std::cout << "Received Reply : " << (char*) z_reply.data() << std::endl;
+
+
 
                 /*qint64 size = child_process->write(payload.toAscii().data(), payload.size());
                 child_process->waitForBytesWritten(-1);
