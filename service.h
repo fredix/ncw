@@ -30,6 +30,7 @@ public:
     Service(zmq::context_t *a_context, ncw_params a_ncw);
     ~Service();
     static Service *getInstance();
+    void init();
 
 
 private:
@@ -53,7 +54,6 @@ private slots:
      void readyReadStandardOutput();
 
 public slots:
-     void init();
      void launch();
      void s_job_receive(bson::bo data);
      void get_pubsub(QString data);

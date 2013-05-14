@@ -865,7 +865,7 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
     {
         qDebug() << "WSERVICE : " << a_ncw.worker_type ;
 
-        QThread *thread_service = new QThread;
+//        QThread *thread_service = new QThread;
 
         if (!(ncw_service = Service::getInstance ()))
             ncw_service = new Service(m_context, a_ncw);
@@ -879,11 +879,11 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
 
         connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
 
-        connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
-        ncw_service->moveToThread(thread_service);
-        thread_service->start();
+  //      connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
+  //      ncw_service->moveToThread(thread_service);
+  //      thread_service->start();
 
-        //ncw_service->init();
+       // ncw_service->init();
         break;
     }
 

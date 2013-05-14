@@ -62,7 +62,7 @@ Service::~Service()
 void Service::init()
 {
 
-
+/*
     QDateTime timestamp = QDateTime::currentDateTime();
 
     m_child_exec = m_ncw.child_exec;
@@ -72,7 +72,7 @@ void Service::init()
 
     BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
-
+*/
 /*    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
     child_process->start(m_child_exec);
     bool start = child_process->waitForStarted(30000);
@@ -100,6 +100,9 @@ void Service::launch()
     m_service_name = m_ncw.worker_name;
     m_node_uuid = m_ncw.node_uuid;
     m_node_password = m_ncw.node_password;
+
+    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+    emit return_tracker(tracker);
 
 
     qDebug() << "!!!!   EXEC PROCESS : " << m_ncw.child_exec;
