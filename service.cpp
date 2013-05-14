@@ -33,13 +33,14 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
 
     child_process = new QProcess(this);
 
+    /*
     z_worker = new zmq::socket_t (*m_context, ZMQ_REQ);
 
     int hwm = 50000;
     z_worker->setsockopt(ZMQ_SNDHWM, &hwm, sizeof (hwm));
     z_worker->setsockopt(ZMQ_RCVHWM, &hwm, sizeof (hwm));
     z_worker->bind ("ipc:///tmp/ncw_worker");
-
+*/
 
     m_mutex = new QMutex;
 
@@ -53,7 +54,7 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
 
 Service::~Service()
 {
-    z_worker->close();
+ //   z_worker->close();
     child_process->terminate();
     delete(child_process);
 }
@@ -62,7 +63,7 @@ Service::~Service()
 void Service::init()
 {
 
-/*
+
     QDateTime timestamp = QDateTime::currentDateTime();
 
     m_child_exec = m_ncw.child_exec;
@@ -72,7 +73,7 @@ void Service::init()
 
     BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
     emit return_tracker(tracker);
-*/
+
 /*    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
     child_process->start(m_child_exec);
     bool start = child_process->waitForStarted(30000);
@@ -101,8 +102,8 @@ void Service::launch()
     m_node_uuid = m_ncw.node_uuid;
     m_node_password = m_ncw.node_password;
 
-    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
-    emit return_tracker(tracker);
+ //   BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+ //   emit return_tracker(tracker);
 
 
     qDebug() << "!!!!   EXEC PROCESS : " << m_ncw.child_exec;
@@ -226,19 +227,19 @@ void Service::get_pubsub(QString data)
                 //child_process->write(data.toString().data());
                 qDebug() << "WRITE TO ZEROMQ PROCESS : " << payload << " SIZE : " << payload.size();
 
-                zmq::message_t z_message;
+                /*zmq::message_t z_message;
                 zmq::message_t z_reply;
                 z_message.rebuild(payload.size());
                 memcpy ((void *) z_message.data (), payload.toAscii().constData(), payload.size());
                 z_worker->send (z_message);
                 z_worker->recv(&z_reply);
                 std::cout << "Received Reply : " << (char*) z_reply.data() << std::endl;
+                */
 
-
-
-                /*qint64 size = child_process->write(payload.toAscii().data(), payload.size());
-                child_process->waitForBytesWritten(-1);
-                qDebug() << "WRITE TO STDIN : " << payload << " SIZE : " << size;*/
+                payload.append("\n");
+                qint64 size = child_process->write(payload.toAscii().data(), payload.size());
+                child_process->waitForBytesWritten();
+                qDebug() << "WRITE TO STDIN : " << payload << " SIZE : " << size;
             }
 
 
@@ -368,15 +369,25 @@ void Service::s_job_receive(bson::bo data) {
 
         //QByteArray q_datas = r_datas.valuestr();
         QString q_datas = QString::fromStdString(r_datas.valuestr());
+        q_datas.append("\n");
         qDebug() << "!!!! Service::s_job_receive SEND PAYLOAD TO STDIN : " << q_datas;
+
+
+        qint64 size = child_process->write(q_datas.toAscii().data(), q_datas.size());
+        child_process->waitForBytesWritten();
+        qDebug() << "WRITE TO STDIN : " << q_datas << " SIZE : " << size;
+
+
 
 //        child_process->write((q_datas + "\n").toLocal8Bit());
 //        bool wait = child_process->waitForBytesWritten();
-
+/*
         zmq::message_t z_message;
         z_message.rebuild(q_datas.size());
         memcpy ((void *) z_message.data (), q_datas.toAscii().constData(), q_datas.size());
-        z_worker->send (z_message);
+        z_worker->send (z_message);*/
+
+
     }
 
 
@@ -407,10 +418,15 @@ void Service::received_file(string filename, bool status)
         qDebug() << "ERROR ON RECEIVED FILE " << json;
     }
 
-    zmq::message_t z_message;
+    child_process->write(json.toAscii());
+    child_process->write("\n");
+
+
+  /*  zmq::message_t z_message;
     z_message.rebuild(json.size());
     memcpy ((void *) z_message.data (), json.toAscii().constData(), json.size());
     z_worker->send (z_message);
+    */
 }
 
 

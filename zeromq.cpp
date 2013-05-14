@@ -883,7 +883,7 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
   //      ncw_service->moveToThread(thread_service);
   //      thread_service->start();
 
-       // ncw_service->init();
+       ncw_service->init();
         break;
     }
 
