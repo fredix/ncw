@@ -523,6 +523,7 @@ Zpayload::~Zpayload()
 }
 
 
+
 Zpayload::Zpayload(zmq::context_t *a_context, ncw_params ncw, QString a_ncs_ip) : m_context(a_context), m_host(a_ncs_ip), m_worker_name(ncw.worker_name), m_node_uuid(ncw.node_uuid), m_node_password(ncw.node_password), m_ncw(ncw)
 {
     std::cout << "Zpayload::Zpayload construct" << std::endl;
@@ -710,19 +711,25 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
 
 void Zpayload::push_payload(BSONObj data)
 {
-    /****** PUSH API PAYLOAD *******/
-    std::cout << "Zpayload:: PUSH PAYLOAD : " <<  data << std::endl;
+    if (Zeromq::lock_push_payload())
+    {
 
-    BSONObj l_payload = BSON("payload" << data << "worker_name" << m_worker_name.toStdString() << "uuid" << m_uuid.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "node_password" << m_node_password.toStdString());
+        /****** PUSH API PAYLOAD *******/
+        std::cout << "Zpayload:: PUSH PAYLOAD : " <<  data << std::endl;
 
-    std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
+        BSONObj l_payload = BSON("payload" << data << "worker_name" << m_worker_name.toStdString() << "uuid" << m_uuid.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "node_password" << m_node_password.toStdString());
+
+        std::cout << "PAYLOAD ADDED FIELD : " << l_payload << std::endl;
 
 
-    m_message->rebuild(l_payload.objsize());
-    memcpy(m_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
-    m_socket_worker->send(*m_message);
-    //delete(m_message);
-    /************************/
+        m_message->rebuild(l_payload.objsize());
+        memcpy(m_message->data(), (char*)l_payload.objdata(), l_payload.objsize());
+        m_socket_worker->send(*m_message);
+        //delete(m_message);
+        /************************/
+
+        Zeromq::unlock_push_payload();
+    }
 }
 
 void Zpayload::receive_payload()
@@ -801,6 +808,29 @@ Zeromq::~Zeromq()
     delete(ncw_service);
     delete(m_context);
     qDebug() << "Zeromq DELETE !";
+}
+
+bool Zeromq::check_push_payload = false;
+QMutex Zeromq::mutex;
+
+bool Zeromq::lock_push_payload()
+{
+    QMutexLocker locker(&mutex);
+
+    if (check_push_payload == true)
+        return false;
+    else
+    {
+        check_push_payload = true;
+        return true;
+    }
+}
+
+
+void Zeromq::unlock_push_payload()
+{
+    QMutexLocker locker(&mutex);
+    check_push_payload = false;
 }
 
 

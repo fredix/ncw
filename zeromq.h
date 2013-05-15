@@ -151,10 +151,16 @@ class Zeromq : public QObject
 public:
     Zeromq(ncw_params ncw, QString ncs_ip);
     ~Zeromq();
+    static bool lock_push_payload();
+    static void unlock_push_payload();
+
+    static bool check_push_payload;
+    static QMutex mutex;
 
     Ztracker *tracker;
     Zpayload *payload;
     Zstream *zstream;
+
 
 private:
     Process *ncw_process;
