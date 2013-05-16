@@ -49,6 +49,8 @@ enum WorkerType {
     WPROCESS=2
 };
 typedef QMap<QString, WorkerType> StringToEnumMap;
+typedef QSharedPointer<QThread> Zthread_pushPtr;
+
 
 class Zstream : public QObject
 {
@@ -144,12 +146,15 @@ public slots:
     void pubsub_payload();
 };
 
+typedef QSharedPointer<Ztracker> Ztracker_pushPtr;
+typedef QSharedPointer<Zpayload> Zpayload_pushPtr;
+typedef QSharedPointer<Zstream> Zstream_pushPtr;
 
 class Zeromq : public QObject
 {
     Q_OBJECT
 public:
-    Zeromq(ncw_params ncw, QString ncs_ip);
+    Zeromq(zmq::context_t *a_context, ncw_params ncw, QString ncs_ip);
     ~Zeromq();
     static bool lock_push_payload();
     static void unlock_push_payload();
@@ -163,6 +168,23 @@ public:
 
 
 private:
+  /*  QHash<QString, Ztracker_pushPtr> ztracker_push;
+    QHash<QString, Zpayload_pushPtr> zpayload_push;
+    QHash<QString, Zstream_pushPtr> zstream_push;
+
+    QHash<QString, Zthread_pushPtr> q_thread_tracker;
+    QHash<QString, Zthread_pushPtr> q_thread_payload;
+    QHash<QString, Zthread_pushPtr> q_thread_stream;
+*/
+    //QThread **thread_tracker;
+    //QThread **thread_payload;
+    //QThread **thread_stream;
+
+    QThread *thread_tracker;
+    QThread *thread_payload;
+    QThread *thread_stream;
+
+
     Process *ncw_process;
     Service *ncw_service;
 

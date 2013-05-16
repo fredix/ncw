@@ -335,12 +335,15 @@ int main(int argc, char *argv[])
 
     setup_unix_signal_handlers();
 
+    zmq::context_t z_context(1);
+
     QStringList ips = ncs_ip.split(",");
 
     foreach (QString ip, ips)
     {
-        zeromq_push[ip] =  QSharedPointer<Zeromq> (new Zeromq(ncw, ip));
+        zeromq_push[ip] =  QSharedPointer<Zeromq> (new Zeromq(&z_context, ncw, ip));
     }
+    //QSharedPointer<Zeromq> (new Zeromq(ncw, ncs_ip));
 
     qDebug() << "end";
     return nodecast_worker.exec();

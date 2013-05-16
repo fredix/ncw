@@ -711,7 +711,8 @@ void Zpayload::init_payload(QString worker_port, QString worker_uuid)
 
 void Zpayload::push_payload(BSONObj data)
 {
-    if (Zeromq::lock_push_payload())
+    if (!Zeromq::lock_push_payload()) return;
+    else
     {
 
         /****** PUSH API PAYLOAD *******/
@@ -802,11 +803,40 @@ void Zpayload::receive_payload()
 
 Zeromq::~Zeromq()
 {
-    delete(tracker);
-    delete(payload);
-    delete(zstream);
-    delete(ncw_service);
-    delete(m_context);
+    tracker->deleteLater();
+    thread_tracker->wait();
+
+    payload->deleteLater();
+    thread_payload->wait();
+
+    zstream->deleteLater();
+    thread_stream->wait();
+
+    //ztracker_push.clear();
+    //q_thread_tracker.clear();
+    /*
+    foreach(QThread *child, q_thread_tracker)
+    {
+        child->wait();
+    }*/
+
+    //zpayload_push.clear();
+    //q_thread_payload.clear();
+    /*foreach(QThread *child, q_thread_payload)
+    {
+        child->wait();
+    }*/
+
+    //zstream_push.clear();
+    //q_thread_stream.clear();
+    /*foreach(QThread *child, q_thread_stream)
+    {
+        child->wait();
+    }*/
+
+    //delete(ncw_service);
+    ncw_service->deleteLater();
+    //delete(m_context);
     qDebug() << "Zeromq DELETE !";
 }
 
@@ -834,7 +864,7 @@ void Zeromq::unlock_push_payload()
 }
 
 
-Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_ncs_ip)
+Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : m_context(a_context), m_ncw(a_ncw), m_ncs_ip(a_ncs_ip)
 {
     qDebug() << "Zeromq::construct";
     StringToEnumMap enumToWorker;
@@ -846,99 +876,144 @@ Zeromq::Zeromq(ncw_params a_ncw, QString a_ncs_ip) : m_ncw(a_ncw), m_ncs_ip(a_nc
     qRegisterMetaType<string>("string");
     qRegisterMetaType<ncw_params>("ncw_params");
 
+  /*  m_context = new zmq::context_t(1);
 
-    m_context = new zmq::context_t(1);
-
-
-
-
-
-    /*********** TRACKER ***********/
-    QThread *thread_tracker = new QThread;
-    tracker = new Ztracker(m_context, m_ncs_ip, m_ncw.ncs_port);
-    connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
-    tracker->moveToThread(thread_tracker);
-    thread_tracker->start();
-    /*********** TRACKER ***********/
-
-
-
-    /*********** PAYLOAD ***********/
-    QThread *thread_payload = new QThread;
-    //payload = new Zpayload(m_context, m_host, m_port);
-
-    payload = new Zpayload(m_context, m_ncw, m_ncs_ip);
-    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
-    payload->moveToThread(thread_payload);
-    thread_payload->start();
-    connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
-    /*********** PAYLOAD ***********/
-
-
-
-
-    /*********** STREAM ***********/
-    QThread *thread_stream = new QThread;
-    //payload = new Zpayload(m_context, m_host, m_port);
-
-    zstream = new Zstream(m_context, m_ncs_ip, m_ncw.directory);
-    //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
-    zstream->moveToThread(thread_stream);
-    thread_stream->start();
-    //connect(tracker, SIGNAL(worker_port(QString, QString)), stream, SLOT(init_payload(QString, QString)));
-    /*********** STREAM ***********/
-
-
-    switch (enumToWorker[a_ncw.worker_type])
+    QStringList ips = m_ncs_ip.split(",");
+    foreach (QString ncs_ip, ips)
     {
-    case WSERVICE:
-    {
-        qDebug() << "WSERVICE : " << a_ncw.worker_type ;
+*/
+        /*********** TRACKER ***********/
+        /*
+        q_thread_tracker[ncs_ip] = QSharedPointer<QThread> (new QThread(this));
+        ztracker_push[ncs_ip] =  QSharedPointer<Ztracker> (new Ztracker(m_context, ncs_ip, m_ncw.ncs_port));
 
-//        QThread *thread_service = new QThread;
+        connect(q_thread_tracker[ncs_ip].data(), SIGNAL(started()), ztracker_push[ncs_ip].data(), SLOT(init()));
+        connect(ztracker_push[ncs_ip].data(), SIGNAL(destroyed()), q_thread_tracker[ncs_ip].data(), SLOT(quit()), Qt::DirectConnection);
 
-        if (!(ncw_service = Service::getInstance ()))
-            ncw_service = new Service(m_context, a_ncw);
+        ztracker_push[ncs_ip]->moveToThread(q_thread_tracker[ncs_ip].data());
+        q_thread_tracker[ncs_ip].data()->start();
+        */
 
-        connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
-        connect(payload, SIGNAL(emit_pubsub(QString)), ncw_service, SLOT(get_pubsub(QString)), Qt::QueuedConnection);
+        thread_tracker = new QThread;
+        tracker = new Ztracker(m_context, m_ncs_ip, m_ncw.ncs_port);
+        connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
+        connect(tracker, SIGNAL(destroyed()), thread_tracker, SLOT(quit()), Qt::DirectConnection);
 
-        connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), zstream, SLOT(get_stream(bson::bo, string, bool*)), Qt::BlockingQueuedConnection);
-
-        connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
-
-  //      connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
-  //      ncw_service->moveToThread(thread_service);
-  //      thread_service->start();
-
-       ncw_service->init();
-        break;
-    }
-
-    case WPROCESS:
-        qDebug() << "WPROCESS : " << a_ncw.worker_type ;
-
-        ncw_process = new Process(a_ncw);
-
-        connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
-
-        connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
-        connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
+        tracker->moveToThread(thread_tracker);
+        thread_tracker->start();
 
 
-        //connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_process, SLOT(init(ncw_params)), Qt::QueuedConnection);
 
-        ncw_process->init();
-        break;
-
-    default:
-        qDebug() << "worker unknown : " << a_ncw.worker_type ;
-        qApp->exit (1);
-    }
+        /*********** TRACKER ***********/
 
 
+        /*********** PAYLOAD ***********/
+        /*
+        q_thread_payload[ncs_ip] = QSharedPointer<QThread> (new QThread(this));
+        zpayload_push[ncs_ip] =  QSharedPointer<Zpayload> (new Zpayload(m_context, m_ncw, m_ncw.ncs_port));
+
+        connect(q_thread_payload[ncs_ip].data(), SIGNAL(started()), zpayload_push[ncs_ip].data(), SLOT(init()));
+        connect(zpayload_push[ncs_ip].data(), SIGNAL(destroyed()), q_thread_payload[ncs_ip].data(), SLOT(quit()), Qt::DirectConnection);
+
+        zpayload_push[ncs_ip]->moveToThread(q_thread_payload[ncs_ip].data());
+        q_thread_payload[ncs_ip].data()->start();
+        */
+
+
+        thread_payload = new QThread;
+        //payload = new Zpayload(m_context, m_host, m_port);
+
+        payload = new Zpayload(m_context, m_ncw, m_ncs_ip);
+        connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
+
+        //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+        payload->moveToThread(thread_payload);
+        thread_payload->start();
+        connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
+
+
+        /*********** PAYLOAD ***********/
+
+
+
+        /*********** STREAM ***********/
+        /*
+        q_thread_stream[ncs_ip] = QSharedPointer<QThread> (new QThread(this));
+        zstream_push[ncs_ip] =  QSharedPointer<Zstream> (new Zstream(m_context, ncs_ip, m_ncw.directory));
+
+        connect(q_thread_stream[ncs_ip].data(), SIGNAL(started()), zstream_push[ncs_ip].data(), SLOT(init()));
+        connect(zstream_push[ncs_ip].data(), SIGNAL(destroyed()), q_thread_stream[ncs_ip].data(), SLOT(quit()), Qt::DirectConnection);
+
+        zstream_push[ncs_ip]->moveToThread(q_thread_stream[ncs_ip].data());
+        q_thread_stream[ncs_ip].data()->start();
+        */
+
+
+        thread_stream = new QThread;
+        //payload = new Zpayload(m_context, m_host, m_port);
+
+        zstream = new Zstream(m_context, m_ncs_ip, m_ncw.directory);
+        connect(zstream, SIGNAL(destroyed()), thread_stream, SLOT(quit()), Qt::DirectConnection);
+
+        //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+        zstream->moveToThread(thread_stream);
+        thread_stream->start();
+        //connect(tracker, SIGNAL(worker_port(QString, QString)), stream, SLOT(init_payload(QString, QString)));
+
+        /*********** STREAM ***********/
+
+
+        switch (enumToWorker[a_ncw.worker_type])
+        {
+        case WSERVICE:
+        {
+            qDebug() << "WSERVICE : " << a_ncw.worker_type ;
+
+    //        QThread *thread_service = new QThread;
+
+            if (!(ncw_service = Service::getInstance ()))
+                ncw_service = new Service(m_context, a_ncw);
+
+            connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_service, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+            connect(payload, SIGNAL(emit_pubsub(QString)), ncw_service, SLOT(get_pubsub(QString)), Qt::QueuedConnection);
+
+            connect(ncw_service, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
+            connect(ncw_service, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
+            connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), zstream, SLOT(get_stream(bson::bo, string, bool*)), Qt::BlockingQueuedConnection);
+
+            connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_service, SLOT(launch()), Qt::QueuedConnection);
+
+      //      connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
+      //      ncw_service->moveToThread(thread_service);
+      //      thread_service->start();
+
+           ncw_service->init();
+            break;
+        }
+
+        case WPROCESS:
+            qDebug() << "WPROCESS : " << a_ncw.worker_type ;
+
+            ncw_process = new Process(a_ncw);
+
+            connect(payload, SIGNAL(emit_payload(bson::bo)), ncw_process, SLOT(s_job_receive(bson::bo)), Qt::QueuedConnection);
+
+            connect(ncw_process, SIGNAL(return_tracker(bson::bo)), tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
+            connect(ncw_process, SIGNAL(push_payload(bson::bo)), payload, SLOT(push_payload(bson::bo)), Qt::QueuedConnection);
+
+
+            //connect(payload, SIGNAL(emit_launch_worker(ncw_params)), ncw_process, SLOT(init(ncw_params)), Qt::QueuedConnection);
+
+            ncw_process->init();
+            break;
+
+        default:
+            qDebug() << "worker unknown : " << a_ncw.worker_type ;
+            qApp->exit (1);
+        }
+
+
+   // }
 
 
 }
