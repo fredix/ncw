@@ -65,7 +65,11 @@ Zstream::~Zstream()
 
 void Zstream::get_stream(BSONObj payload, string filename, bool *status)
 {
-    m_mutex->lock ();
+    //m_mutex->lock ();
+    if (!Zeromq::lock_get_stream()) return;
+    else
+    {
+
     std::cout << "Zstream::get_stream, filename : " << filename << " payload : " << payload << std::endl;
 /*
     BSONObj z_payload = BSON("payload" << payload << "action" << "getifilename");
@@ -187,8 +191,10 @@ void Zstream::get_stream(BSONObj payload, string filename, bool *status)
 
     }
     out.close ();   
-    m_mutex->unlock ();
+  //  m_mutex->unlock ();
 
+    Zeromq::unlock_get_stream();
+}
     //delete(z_message);
 
     /* Get the reply.
@@ -845,11 +851,14 @@ Zeromq::~Zeromq()
 }
 
 bool Zeromq::check_push_payload = false;
-QMutex Zeromq::mutex;
+bool Zeromq::check_get_stream = false;
+
+QMutex Zeromq::mutex_push_payload;
+QMutex Zeromq::mutex_get_stream;
 
 bool Zeromq::lock_push_payload()
 {
-    QMutexLocker locker(&mutex);
+    QMutexLocker locker(&mutex_push_payload);
 
     if (check_push_payload == true)
         return false;
@@ -863,9 +872,31 @@ bool Zeromq::lock_push_payload()
 
 void Zeromq::unlock_push_payload()
 {
-    QMutexLocker locker(&mutex);
+    QMutexLocker locker(&mutex_push_payload);
     check_push_payload = false;
 }
+
+bool Zeromq::lock_get_stream()
+{
+    QMutexLocker locker(&mutex_get_stream);
+
+    if (check_get_stream == true)
+        return false;
+    else
+    {
+        check_get_stream = true;
+        return true;
+    }
+}
+
+
+void Zeromq::unlock_get_stream()
+{
+    QMutexLocker locker(&mutex_get_stream);
+    check_get_stream = false;
+}
+
+
 
 
 Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : m_context(a_context), m_ncw(a_ncw), m_ncs_ip(a_ncs_ip)

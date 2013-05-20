@@ -158,9 +158,14 @@ public:
     ~Zeromq();
     static bool lock_push_payload();
     static void unlock_push_payload();
-
     static bool check_push_payload;
-    static QMutex mutex;
+    static QMutex mutex_push_payload;
+
+    static bool lock_get_stream();
+    static void unlock_get_stream();
+    static bool check_get_stream;
+    static QMutex mutex_get_stream;
+
 
     Ztracker *tracker;
     Zpayload *payload;
