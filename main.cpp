@@ -345,6 +345,8 @@ int main(int argc, char *argv[])
     }
     //QSharedPointer<Zeromq> (new Zeromq(ncw, ncs_ip));
 
+    Service::init(ncw);
+
     qDebug() << "end";
     return nodecast_worker.exec();
 }

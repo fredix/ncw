@@ -30,7 +30,7 @@ public:
     Service(zmq::context_t *a_context, ncw_params a_ncw);
     ~Service();
     static Service *getInstance();
-    void init();
+    static void init(ncw_params params);
 
 
 private:

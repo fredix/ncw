@@ -57,7 +57,7 @@ signals:
     void get_stream(bson::bo data, string filename, bool *status);
 
 public slots:
-    virtual void init()=0;
+    //virtual void init()=0;
     virtual void launch();
     virtual void s_job_receive(bson::bo data)=0;
     virtual void get_pubsub(QString data);

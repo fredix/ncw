@@ -29,9 +29,10 @@ Worker::~Worker()
 {}
 
 
-
+/*
 void Worker::init()
 {}
+*/
 
 void Worker::launch()
 {}

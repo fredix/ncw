@@ -60,19 +60,25 @@ Service::~Service()
 }
 
 
-void Service::init()
+void Service::init(ncw_params params)
 {
 
 
     QDateTime timestamp = QDateTime::currentDateTime();
-
+/*
     m_child_exec = m_ncw.child_exec;
     m_service_name = m_ncw.worker_name;
     m_node_uuid = m_ncw.node_uuid;
     m_node_password = m_ncw.node_password;
+*/
 
-    BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
-    emit return_tracker(tracker);
+
+    //BSONObj tracker = BSON("type" << "service" << "name" << m_service_name.toStdString() << "node_uuid" << m_node_uuid.toStdString() << "command" << m_child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+
+    BSONObj tracker = BSON("type" << "service" << "name" << params.worker_name.toStdString() << "node_uuid" << params.node_uuid.toStdString() << "command" << params.child_exec.toStdString() << "action" << "register" << "pid" << QCoreApplication::applicationPid() << "timestamp" << timestamp.toTime_t());
+
+
+    emit _singleton->return_tracker(tracker);
 
 /*    qDebug() << "!!!!   EXEC PROCESS : " << ncw.child_exec;
     child_process->start(m_child_exec);

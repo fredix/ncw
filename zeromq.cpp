@@ -418,7 +418,7 @@ void Ztracker::init()
 {
     m_mutex->lock();
 
-    std::cout << "Connecting to the ncs tracker" << std::endl;
+    std::cout << "Connecting to the ncs tracker : " << m_host.toStdString() << std::endl;
     //z_sender->connect ("tcp://localhost:5569");
 
     QString connection_string = "tcp://" + m_host + ":" + m_port;
@@ -465,6 +465,10 @@ void Ztracker::push_tracker(bson::bo payload)
     std::cout << "Ztracker::push_tracker" << std::endl;
     std::cout << "TRACKER : " << payload << std::endl;
 
+    qDebug() << "SENDER : " << this->sender();
+
+
+
     bo l_payload;
 
     if (payload["action"].str() != "register")
@@ -492,7 +496,7 @@ void Ztracker::push_tracker(bson::bo payload)
     zmq::message_t reply;
     z_sender->recv (&reply);
 
-    bo r_payload = bo((char*)reply.data());
+    BSONObj r_payload = BSONObj((const char*)reply.data());
 
     std::cout << "Received : " << r_payload << std::endl;
 
@@ -925,11 +929,11 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
 
         payload = new Zpayload(m_context, m_ncw, m_ncs_ip);
         connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
+        connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
 
         //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
         payload->moveToThread(thread_payload);
         thread_payload->start();
-        connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
 
 
         /*********** PAYLOAD ***********/
@@ -987,7 +991,7 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
       //      ncw_service->moveToThread(thread_service);
       //      thread_service->start();
 
-           ncw_service->init();
+        //   ncw_service->init();
             break;
         }
 
