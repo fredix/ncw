@@ -219,6 +219,7 @@ public:
     QHash<int, Zstream_pushPtr> zstream;
 
 private:
+    QThread *thread_service;
     zmq::context_t *z_context;
     QHash<int, Zeromq_pushPtr> zeromq_push;
 

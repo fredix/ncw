@@ -833,10 +833,16 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 
     z_context = new zmq::context_t(1);
 
+    thread_service = new QThread;
     ncw_service = new Service(z_context, ncw);
+    connect(ncw_service, SIGNAL(push_payload(bson::bo)), this, SLOT(push_payload(bson::bo)));
+    connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), this, SLOT(push_stream(bson::bo, string, bool*)));
+    connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
+    connect(ncw_service, SIGNAL(destroyed()), thread_service, SLOT(quit()), Qt::DirectConnection);
 
-    connect(ncw_service, SIGNAL(push_payload(bson::bo)), this, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
-    connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), this, SLOT(push_stream(bson::bo, string, bool*)), Qt::DirectConnection);
+    ncw_service->moveToThread(thread_service);
+    thread_service->start();
+
 
 
 
@@ -862,6 +868,8 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 
 Zdispatcher::~Zdispatcher()
 {
+    ncw_service->deleteLater();
+    thread_service->wait();
     zeromq_push.clear();
     z_context->close();
 }
@@ -916,7 +924,7 @@ Zeromq::~Zeromq()
     }*/
 
     //delete(ncw_service);
-    ncw_service->deleteLater();
+    //ncw_service->deleteLater();
     //delete(m_context);
     qDebug() << "Zeromq DELETE !";
 }
