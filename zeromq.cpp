@@ -831,9 +831,9 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 
     ncs_counter, ncs_number = 0;
 
-    zmq::context_t z_context(1);
+    z_context = new zmq::context_t(1);
 
-    ncw_service = new Service(&z_context, ncw);
+    ncw_service = new Service(z_context, ncw);
 
     connect(ncw_service, SIGNAL(push_payload(bson::bo)), this, SLOT(push_payload(bson::bo)), Qt::DirectConnection);
     connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), this, SLOT(push_stream(bson::bo, string, bool*)), Qt::DirectConnection);
@@ -844,7 +844,7 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
     ncs_number = ips.size();
     foreach (QString ip, ips)
     {
-        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(&z_context, ncw, ip));
+        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(z_context, ncw, ip));
 
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), zeromq_push[ncs_counter].data()->tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
@@ -861,7 +861,10 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 }
 
 Zdispatcher::~Zdispatcher()
-{}
+{
+    zeromq_push.clear();
+    z_context->close();
+}
 
 
 void Zdispatcher::push_payload(bson::bo data)
