@@ -335,7 +335,10 @@ int main(int argc, char *argv[])
 
     setup_unix_signal_handlers();
 
-    zmq::context_t z_context(1);
+
+    Zdispatcher dispatcher(ncw, ncs_ip);
+
+  /*  zmq::context_t z_context(1);
 
     QStringList ips = ncs_ip.split(",");
 
@@ -346,7 +349,7 @@ int main(int argc, char *argv[])
     //QSharedPointer<Zeromq> (new Zeromq(ncw, ncs_ip));
 
     Service::init(ncw);
-
+*/
     qDebug() << "end";
     return nodecast_worker.exec();
 }

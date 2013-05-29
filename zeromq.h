@@ -28,6 +28,7 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QSocketNotifier>
+#include <QQueue>
 
 #include <boost/cstdint.hpp>
 #include <boost/asio.hpp>
@@ -58,6 +59,7 @@ class Zstream : public QObject
 public:
     Zstream(zmq::context_t *a_context, QString a_host, QString a_directory);
     ~Zstream();
+    void get_stream(bson::bo payload, string filename, bool *status);
 
 
 private:
@@ -73,7 +75,6 @@ private:
     QString m_uuid;
 
 private slots:
-    void get_stream(bson::bo payload, string filename, bool *status);
     void stream_payload();
     void stream_payload2();
 };
@@ -146,9 +147,8 @@ public slots:
     void pubsub_payload();
 };
 
-typedef QSharedPointer<Ztracker> Ztracker_pushPtr;
-typedef QSharedPointer<Zpayload> Zpayload_pushPtr;
-typedef QSharedPointer<Zstream> Zstream_pushPtr;
+
+
 
 class Zeromq : public QObject
 {
@@ -189,6 +189,7 @@ private:
     QThread *thread_payload;
     QThread *thread_stream;
 
+    //Zdispatcher *ncw_dispatcher;
 
     Process *ncw_process;
     Service *ncw_service;
@@ -198,5 +199,51 @@ private:
     ncw_params m_ncw;
     QString m_ncs_ip;
 };
+
+
+typedef QSharedPointer<Zeromq> Zeromq_pushPtr;
+typedef QSharedPointer<Ztracker> Ztracker_pushPtr;
+typedef QSharedPointer<Zpayload> Zpayload_pushPtr;
+typedef QSharedPointer<Zstream> Zstream_pushPtr;
+
+
+class Zdispatcher : public QObject
+{
+    Q_OBJECT
+public:
+    Zdispatcher(ncw_params ncw, QString ncs_ips);
+    ~Zdispatcher();
+    static Zdispatcher *getInstance();
+
+    QHash<int, Zpayload_pushPtr> zpayload;
+    QHash<int, Zstream_pushPtr> zstream;
+
+private:
+    QHash<int, Zeromq_pushPtr> zeromq_push;
+
+    int ncs_counter, ncs_number;
+    static Zdispatcher *_singleton;
+    Ztracker *tracker;
+    QThread *thread_tracker;
+    QThread *thread_payload;
+    QThread *thread_stream;
+
+    Process *ncw_process;
+    Service *ncw_service;
+
+
+
+    QMutex *m_mutex;
+
+    QString m_host;
+    QString m_port;
+    QString m_uuid;
+
+
+public slots:
+    void push_payload(bson::bo data);
+    void push_stream(bson::bo payload, string filename, bool *status);
+};
+
 
 #endif // ZEROMQ_H
