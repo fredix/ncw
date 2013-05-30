@@ -819,7 +819,7 @@ Zdispatcher* Zdispatcher::getInstance() {
 
 typedef QSharedPointer<Zeromq> Zeromq_pushPtr;
 
-Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
+Zdispatcher::Zdispatcher(zmq::context_t *a_context, ncw_params ncw, QString ncs_ips): m_context(a_context)
 {
     qDebug() << "Zdispatcher::Zdispatcher constructor";
 
@@ -827,21 +827,20 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
     qRegisterMetaType<string>("string");
     qRegisterMetaType<ncw_params>("ncw_params");
 
+    ncs_counter = 1;
+    ncs_number = 0;
 
+    //z_context = new zmq::context_t(1);
 
-    ncs_counter, ncs_number = 0;
-
-    z_context = new zmq::context_t(1);
-
-    thread_service = new QThread;
-    ncw_service = new Service(z_context, ncw);
+  //  thread_service = new QThread;
+    ncw_service = new Service(m_context, ncw);
     connect(ncw_service, SIGNAL(push_payload(bson::bo)), this, SLOT(push_payload(bson::bo)));
     connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), this, SLOT(push_stream(bson::bo, string, bool*)));
-    connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
-    connect(ncw_service, SIGNAL(destroyed()), thread_service, SLOT(quit()), Qt::DirectConnection);
+  //  connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
+  //  connect(ncw_service, SIGNAL(destroyed()), thread_service, SLOT(quit()), Qt::DirectConnection);
 
-    ncw_service->moveToThread(thread_service);
-    thread_service->start();
+//    ncw_service->moveToThread(thread_service);
+//    thread_service->start();
 
 
 
@@ -850,7 +849,7 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
     ncs_number = ips.size();
     foreach (QString ip, ips)
     {
-        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(z_context, ncw, ip));
+        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(m_context, ncw, ip));
 
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), zeromq_push[ncs_counter].data()->tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);

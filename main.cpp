@@ -336,7 +336,9 @@ int main(int argc, char *argv[])
     setup_unix_signal_handlers();
 
 
-    Zdispatcher dispatcher(ncw, ncs_ip);
+    zmq::context_t z_context(1);
+
+    Zdispatcher dispatcher(&z_context, ncw, ncs_ip);
 
   /*  zmq::context_t z_context(1);
 
