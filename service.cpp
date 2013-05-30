@@ -55,7 +55,13 @@ Service::Service(zmq::context_t *a_context, ncw_params a_ncw) : Worker(), m_cont
 Service::~Service()
 {
  //   z_worker->close();
+
+    qDebug() << "Service timer stop";
+    timer->stop();
+
+    qDebug() << "Service terminate process";
     child_process->terminate();
+    qDebug() << "Service delete child process";
     delete(child_process);
 }
 

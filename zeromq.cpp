@@ -532,8 +532,14 @@ Zpayload::~Zpayload()
 {
     std::cout << "Zpayload::Zpayload destruct" << std::endl;
     m_receiver->close();
+    std::cout << "Zpayload::Zpayload m_receiver" << std::endl;
+
     m_socket_worker->close();
+    std::cout << "Zpayload::Zpayload m_socket_worker" << std::endl;
+
     m_socket_pubsub->close();
+    std::cout << "Zpayload::Zpayload m_socket_pubsub" << std::endl;
+
 }
 
 
@@ -564,7 +570,7 @@ void Zpayload::pubsub_payload()
 {
     check_pubsub_payload->setEnabled(false);
 
-    qDebug() << "Zpayload::pubsub_payload";
+    qDebug() << "Zpayload::pubsub_payload from : " << m_host;
     /*
     qint32 events = 0;
     std::size_t eventsSize = sizeof(events);
@@ -831,7 +837,7 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
     qRegisterMetaType<string>("string");
     qRegisterMetaType<ncw_params>("ncw_params");
 
-    ncs_counter = 1;
+    ncs_counter = 0;
     ncs_number = 0;
 
     z_context = new zmq::context_t(1);
@@ -871,10 +877,13 @@ Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 
 Zdispatcher::~Zdispatcher()
 {
+    qDebug() << "Zdispatcher::~Zdispatcher";
     ncw_service->deleteLater();
-    thread_service->wait();
+    //thread_service->wait();
+
     zeromq_push.clear();
     z_context->close();
+    qDebug() << "Zdispatcher::~Zdispatcher z_context close";
 }
 
 
@@ -899,12 +908,15 @@ Zeromq::~Zeromq()
 {
     tracker->deleteLater();
     thread_tracker->wait();
+    qDebug() << "Zeromq::~Zeromq thread_tracker deleted";
 
     payload->deleteLater();
     thread_payload->wait();
+    qDebug() << "Zeromq::~Zeromq thread_payload deleted";
 
     zstream->deleteLater();
     thread_stream->wait();
+    qDebug() << "Zeromq::~Zeromq thread_stream deleted";
 
     //ztracker_push.clear();
     //q_thread_tracker.clear();
@@ -1052,7 +1064,7 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
 
 
  //       connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
- //       connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
+        connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
         connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
 
 

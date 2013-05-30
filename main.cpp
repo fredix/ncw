@@ -24,7 +24,6 @@
 
 typedef QSharedPointer<Zeromq> Zeromq_pushPtr;
 
-
 /*
 static int s_interrupted = 0;
 static void s_signal_handler (int signal_value)
@@ -149,7 +148,7 @@ int main(int argc, char *argv[])
     QString ncs_ip;
 
 
-    QHash<QString, Zeromq_pushPtr> zeromq_push;
+   // QHash<QString, Zeromq_pushPtr> zeromq_push;
 
     NcwDaemon ncw_daemon;
 
