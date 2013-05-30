@@ -25,6 +25,8 @@
 
 Zstream::Zstream(zmq::context_t *a_context, QString a_host,  QString a_directory) : m_context(a_context), m_host(a_host), m_directory(a_directory)
 {
+    std::cout << "Zstream::Zstream construct" << std::endl;
+
     m_mutex = new QMutex();
 
     // Prepare our context and socket
@@ -400,6 +402,8 @@ void Zstream::stream_payload()
 
 Ztracker::Ztracker(zmq::context_t *a_context, QString a_host, QString a_port) : m_context(a_context)
 {
+    std::cout << "Ztracker::Ztracker construct" << std::endl;
+
     m_mutex = new QMutex();
 
     m_host = a_host;
@@ -819,7 +823,7 @@ Zdispatcher* Zdispatcher::getInstance() {
 
 typedef QSharedPointer<Zeromq> Zeromq_pushPtr;
 
-Zdispatcher::Zdispatcher(zmq::context_t *a_context, ncw_params ncw, QString ncs_ips): m_context(a_context)
+Zdispatcher::Zdispatcher(ncw_params ncw, QString ncs_ips)
 {
     qDebug() << "Zdispatcher::Zdispatcher constructor";
 
@@ -830,10 +834,10 @@ Zdispatcher::Zdispatcher(zmq::context_t *a_context, ncw_params ncw, QString ncs_
     ncs_counter = 1;
     ncs_number = 0;
 
-    //z_context = new zmq::context_t(1);
+    z_context = new zmq::context_t(1);
 
   //  thread_service = new QThread;
-    ncw_service = new Service(m_context, ncw);
+    ncw_service = new Service(z_context, ncw);
     connect(ncw_service, SIGNAL(push_payload(bson::bo)), this, SLOT(push_payload(bson::bo)));
     connect(ncw_service, SIGNAL(get_stream(bson::bo, string, bool*)), this, SLOT(push_stream(bson::bo, string, bool*)));
   //  connect(thread_service, SIGNAL(started()), ncw_service, SLOT(init()));
@@ -849,7 +853,7 @@ Zdispatcher::Zdispatcher(zmq::context_t *a_context, ncw_params ncw, QString ncs_
     ncs_number = ips.size();
     foreach (QString ip, ips)
     {
-        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(m_context, ncw, ip));
+        zeromq_push[ncs_counter] = QSharedPointer<Zeromq> (new Zeromq(z_context, ncw, ip));
 
 
         connect(ncw_service, SIGNAL(return_tracker(bson::bo)), zeromq_push[ncs_counter].data()->tracker, SLOT(push_tracker(bson::bo)), Qt::QueuedConnection);
@@ -877,12 +881,14 @@ Zdispatcher::~Zdispatcher()
 void Zdispatcher::push_payload(bson::bo data)
 {
     int round_robin = qrand() % ncs_number;
+    qDebug() << "Zdispatcher::push_payload ROUND ROBIN : " << round_robin;
     zeromq_push[round_robin].data()->payload->push_payload(data);
 }
 
 void Zdispatcher::push_stream(bson::bo payload, string filename, bool *status)
 {
     int round_robin = qrand() % ncs_number;
+    qDebug() << "Zdispatcher::push_stream ROUND ROBIN : " << round_robin;
     zeromq_push[round_robin].data()->zstream->get_stream(payload, filename, status);
 
 }
@@ -894,11 +900,11 @@ Zeromq::~Zeromq()
     tracker->deleteLater();
     thread_tracker->wait();
 
-    //payload->deleteLater();
-    //thread_payload->wait();
+    payload->deleteLater();
+    thread_payload->wait();
 
-    //zstream->deleteLater();
-    //thread_stream->wait();
+    zstream->deleteLater();
+    thread_stream->wait();
 
     //ztracker_push.clear();
     //q_thread_tracker.clear();
@@ -1013,7 +1019,7 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
         q_thread_tracker[ncs_ip].data()->start();
         */
 
-        thread_tracker = new QThread;
+        thread_tracker = new QThread(this);
         tracker = new Ztracker(m_context, m_ncs_ip, m_ncw.ncs_port);
         connect(thread_tracker, SIGNAL(started()), tracker, SLOT(init()));
         connect(tracker, SIGNAL(destroyed()), thread_tracker, SLOT(quit()), Qt::DirectConnection);
@@ -1039,16 +1045,14 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
         */
 
 
-        thread_payload = new QThread;
-        //payload = new Zpayload(m_context, m_host, m_port);
-
+        thread_payload = new QThread(this);
         payload = new Zpayload(m_context, m_ncw, m_ncs_ip);
 //        ncw_dispatcher->zpayload[ncw_dispatcher->ncs_counter] = QSharedPointer<Zpayload> (new Zpayload(m_context, m_ncw, m_ncw.ncs_port));
         //zpayload_push[ncs_ip] =  QSharedPointer<Zpayload> (new Zpayload(m_context, m_ncw, m_ncw.ncs_port));
 
 
-
-        connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
+ //       connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+ //       connect(payload, SIGNAL(destroyed()), thread_payload, SLOT(quit()), Qt::DirectConnection);
         connect(tracker, SIGNAL(worker_port(QString, QString)), payload, SLOT(init_payload(QString, QString)));
 
 
@@ -1057,8 +1061,12 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
 
 
 
-        connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
+   //     connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
         //ncw_dispatcher->zpayload[ncw_dispatcher->ncs_counter].data()->moveToThread(thread_payload);
+
+
+
+        payload->moveToThread(thread_payload);
         thread_payload->start();
 
 
@@ -1086,9 +1094,6 @@ Zeromq::Zeromq(zmq::context_t *a_context, ncw_params a_ncw, QString a_ncs_ip) : 
         //ncw_dispatcher->zstream[ncw_dispatcher->ncs_counter] = QSharedPointer<Zstream> (new Zstream(m_context, m_ncs_ip, m_ncw.directory));
 
         connect(zstream, SIGNAL(destroyed()), thread_stream, SLOT(quit()), Qt::DirectConnection);
-
-
-        //connect(zstream, SIGNAL(destroyed()), thread_stream, SLOT(quit()), Qt::DirectConnection);
 
         //connect(thread_payload, SIGNAL(started()), payload, SLOT(receive_payload()));
         zstream->moveToThread(thread_stream);

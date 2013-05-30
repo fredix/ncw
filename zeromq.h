@@ -211,7 +211,7 @@ class Zdispatcher : public QObject
 {
     Q_OBJECT
 public:
-    Zdispatcher(zmq::context_t *a_context, ncw_params ncw, QString ncs_ips);
+    Zdispatcher(ncw_params ncw, QString ncs_ips);
     ~Zdispatcher();
     static Zdispatcher *getInstance();
 
